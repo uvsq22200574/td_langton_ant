@@ -15,7 +15,7 @@ width += 2
 
 
 window = Tk()
-window.title("Game of Life")
+window.title("Langton's Ant")
 window.configure(bg="#000000")
 window.state('zoomed')
 
