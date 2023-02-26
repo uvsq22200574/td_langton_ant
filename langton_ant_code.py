@@ -1,10 +1,3 @@
-from time import time
-from colorama import init, Fore, Style
-from datetime import datetime
-
-init()
-
-
 def render(table):
     for index in range(len(table)):
         print(*table[index], end='\n')
