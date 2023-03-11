@@ -1,4 +1,4 @@
-from langton_ant_code import start, start_ant, time_log, count, read, read_ant, next_gen, progress_bar
+from langton_code import start, start_ant, time_log, count, read, read_ant, next_gen, progress_bar, render
 from tkinter import Tk, Canvas, Label, Menu
 from ctypes import windll
 
