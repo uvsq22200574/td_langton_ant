@@ -144,11 +144,11 @@ def size():
 sim_graph = Label()
 sim_graph.grid(row=0, column=0)
 
-Sim_stats_1 = Label(text="", background="#000000", fg='magenta', font=("Times New Roman", size()[1]))  # noqa: E501
-Sim_stats_2 = Label(text="", background="#000000", fg='magenta', font=("Times New Roman", size()[1]))  # noqa: E501
-Sim_parameters_1 = Label(text='Cursor dimensions:' + str(cursor_size_width) + 'x' + str(cursor_size_height) + ' | ' + str(action.__name__) + '    ', background="#000000", fg='#0088ff', font=("Times New Roman", size()[1]))  # noqa: E501
-Sim_progress = Label(text=progress_bar(generation, number_of_generations, tmp=1)[0] + " " + str(generation) + "/" + str(number_of_generations), background="#000000", fg=progress_bar(generation, number_of_generations, tmp=1)[1], font=("Times New Roman", size()[1]))  # noqa: E501
-Sim_feedback = Label(text="Nothing to report.", background="#000000", fg="#AAAAAA", font=("Times New Roman", size()[1]))  # noqa: E501
+Sim_stats_1 = Label(text="", background="#444444", fg='magenta', font=("Times New Roman", size()[1]))  # noqa: E501
+Sim_stats_2 = Label(text="", background="#444444", fg='magenta', font=("Times New Roman", size()[1]))  # noqa: E501
+Sim_parameters_1 = Label(text='Cursor dimensions:' + str(cursor_size_width) + 'x' + str(cursor_size_height) + ' | ' + str(action.__name__) + '    ', background="#444444", fg='#0088ff', font=("Times New Roman", size()[1]))  # noqa: E501
+Sim_progress = Label(text=progress_bar(generation, number_of_generations, tmp=1, tmp2=3)[0] + " " + str(generation) + "/" + str(number_of_generations), background="#444444", fg=progress_bar(generation, number_of_generations, tmp=1, tmp2=3)[1], font=("Times New Roman", size()[1]))  # noqa: E501
+Sim_feedback = Label(text="Nothing to report.", background="#444444", fg="#AAAAAA", font=("Times New Roman", size()[1]))  # noqa: E501
 Sim_stats_1.grid(row=1, column=0)
 Sim_stats_2.grid(row=2, column=0)
 Sim_parameters_1.grid(row=3, column=0)
@@ -206,10 +206,10 @@ def after_loop():
 
     global main_grid, ant_grid, generation, number_of_generations
 
-    Sim_stats_1.config(text='Generation n°%d | Rules "%s" | %sx%s | %s' % (generation, rules[1], dimensions[0], dimensions[1], time_log(1)))  # noqa: E501
+    Sim_stats_1.config(text='Generation n°%d | Rules "%s" | %sx%s | %s' % (generation, rules[1], dimensions[0], dimensions[1], time_log(True)))  # noqa: E501
     Sim_stats_2.config(text='Cell count: %s | Ant count: %s' % (count(main_grid, 0), count(ant_grid)))  # noqa: E501
     Sim_parameters_1.config(text='Cursor dimensions:' + str(cursor_size_width) + 'x' + str(cursor_size_height) + ' | ' + str(action.__name__))  # noqa: E501
-    Sim_progress.config(text=progress_bar(generation, number_of_generations, tmp=1)[0] + " " + str(generation) + "/" + str(number_of_generations), fg=progress_bar(generation, number_of_generations, tmp=1)[1])  # noqa: E501
+    Sim_progress.config(text=progress_bar(generation, number_of_generations, tmp=1, tmp2=3)[0] + " " + str(generation) + "/" + str(number_of_generations), fg=progress_bar(generation, number_of_generations, tmp=1, tmp2=3)[1])  # noqa: E501
     window.update()
     draw_simulation()
     if pause == -1:
@@ -227,7 +227,7 @@ def after_loop():
 
 
 grid_edit = IntVar()
-grid_Checkbutton = Checkbutton(bg="#AAAAAA", text="Edit Cells", variable=grid_edit)  # noqa: E501
+grid_Checkbutton = Checkbutton(bg="#444444", text="Edit Cells", variable=grid_edit)  # noqa: E501
 grid_Checkbutton.place(x=1200, y=100)
 
 Simulation_fill_white = Button(text='Fill White', command=lambda: fill_grid(main_grid, value=-1))  # noqa: E501
@@ -272,7 +272,7 @@ def key_press(event):
             main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height)
             generation += 1
     elif press == 'Tab':
-        print('Attempted a forced window closure by pressing TAB at generation n° %d at %s  ' % (generation, time_log(1)))  # noqa: E501
+        print('Attempted a forced window closure by pressing TAB at generation n° %d at %s  ' % (generation, time_log(True)))  # noqa: E501
         stop_sim()
         pause = 1
     elif press == 'Up':

@@ -1,23 +1,23 @@
 from colorama import init, Fore, Style
-from datetime import datetime
 
 init()
 
 
-def time_log(simple_format=0):  # noqa: E501
+def time_log(simple_format=False):  # noqa: E501
+    from datetime import datetime
     '''Will estimate the precise time at which it has been executed.'''
-    if simple_format == 1:
+    if simple_format is True:
         return ('%s' % (datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
     return ('[%s]: ' % (datetime.now().strftime("%d/%m/%Y | %H:%M:%S")))
 
 
-def progress_bar(progress: int, total: int, init_msg='', end_msg='', tmp=0):
+def progress_bar(progress: int, total: int, init_msg='', end_msg='', tmp=0, tmp2=2):  # noqa: E501
     '''Returns or print a progress bar.'''
-    percent, current_time = (progress * 100) / float(total), time_log(1)
+    percent, current_time = (progress * 100) / float(total), time_log(True)
     if percent % 2 == 0:
-        bar = '▓' * int((percent)/2) + '░' * (int((100 - percent)/2))
+        bar = '▓' * int((percent)/tmp2) + '░' * (int((100 - percent)/tmp2))
     else:
-        bar = '▓' * int((percent)/2) + '░' * (int((100 - percent)/2) + 1)
+        bar = '▓' * int((percent)/tmp2) + '░' * (int((100 - percent)/tmp2) + 1)
 
     if tmp == 0:
         if progress/total >= 1:
