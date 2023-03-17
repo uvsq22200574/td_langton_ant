@@ -1,12 +1,17 @@
 from langton_code import start, start_ant, time_log, count, next_gen, progress_bar  # noqa: E501
 from tkinter import Tk, Label, Menu, Checkbutton, IntVar, Button
 from PIL import Image, ImageTk
-from ctypes import windll   # Seems to not work on linux systems
+import platform
 
-# Window size
-user32 = windll.user32
-user32.SetProcessDPIAware()
-# Window size END
+if platform.system() == 'Windows':
+    from ctypes import windll
+    user32 = windll.user32
+    user32.SetProcessDPIAware()
+    screen_width, screen_height = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)  # noqa: E501
+else:
+    from Xlib.display import Display
+    screen = Display(':0').screen()
+    print(screen.width_in_pixels, screen.height_in_pixels)
 
 
 def rectangle(grid, x, y, x_length, y_length, value=1):
@@ -36,10 +41,6 @@ def rectangle(grid, x, y, x_length, y_length, value=1):
             grid[y+yp][x+xp] = value
 
 
-# Window size
-user32 = windll.user32
-user32.SetProcessDPIAware()
-# Window size END
 
 # Simulation parameters
 height, width, posx, posy, pause = 100, 100, 10, 10, -1
@@ -52,8 +53,9 @@ main_grid, ant_grid = start(height, width), start_ant(height, width)
 action, cursor_size_width, cursor_size_height = (rectangle), 1, 1
 
 
-screen_width, screen_height = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)  # noqa: E501
-generation, number_of_generations, steps_per_gen, cell = 0, 20000, 1, 10
+
+generation, number_of_generations, steps_per_gen, cell = 0, 20000, 1, 8
+slide = 1
 
 # [Movement Behaviour: str], [Change Rule: 0,1], [Ant Color], [Rule Name]
 rules = [["#00ff00", "#ff00ff"], "LANGTON ANT"]
@@ -179,7 +181,7 @@ def draw_simulation():
                 pixels[row, column] = (255, 0, 255) if (main_grid[column][row] == 1) else (0, 255, 0)  # noqa: E501
 
     # Resize the image to be bigger.
-    mid_image = ((cell_grid.resize((cell_grid.size[0] * cell, cell_grid.size[1] * cell), Image.Resampling.NEAREST)))  # noqa: E501
+    mid_image = ((cell_grid.resize((cell_grid.size[0] * cell, cell_grid.size[1] * cell), resample=Image.NEAREST)))  # noqa: E501
 
     # Draw pixels intersections as points, red if the cell is marked, black otherwise.  # noqa: E501
     pixels = mid_image.load()
@@ -219,7 +221,7 @@ def after_loop():
         for iteration in range(steps_per_gen):
             if steps_per_gen > 1:
                 progress_bar(iteration, steps_per_gen-1)
-            main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height)
+            main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height, slide)  # noqa: E501
         generation += steps_per_gen
         window.after(func=after_loop, ms=1)
     else:
@@ -266,10 +268,10 @@ def key_press(event):
     elif press == 'f':
         if pause == 1:
             pause = -(pause)
-            main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height)
+            main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height, slide)  # noqa: E501
             generation += 1
         else:
-            main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height)
+            main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height, slide)  # noqa: E501
             generation += 1
     elif press == 'Tab':
         print('Attempted a forced window closure by pressing TAB at generation n° %d at %s  ' % (generation, time_log(True)))  # noqa: E501
