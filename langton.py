@@ -1,9 +1,11 @@
-from langton_code import start, start_ant, time_log, count, next_gen, progress_bar  # noqa: E501
 from tkinter import Tk, Label, Menu, Checkbutton, IntVar, Button
-from PIL import Image, ImageTk
-import platform
+from PIL import Image, ImageTk, ImageColor
+from colorama import init, Fore, Style
+from platform import system
+init()
 
-if platform.system() == 'Windows':
+
+if operating_sytem := system() == 'Windows':
     from ctypes import windll
     user32 = windll.user32
     user32.SetProcessDPIAware()
@@ -11,7 +13,140 @@ if platform.system() == 'Windows':
 else:
     from Xlib.display import Display
     screen = Display(':0').screen()
-    print(screen.width_in_pixels, screen.height_in_pixels)
+    screen_width, screen_height = (screen.width_in_pixels, screen.height_in_pixels)  # noqa: E501
+
+
+# /=> Functions END <=/
+
+
+def time_log(simple_format=False, tmp=False, tmp2=False):  # noqa: E501
+    from datetime import datetime
+    '''Will estimate the precise time at which it has been executed.'''
+    if tmp2 is True:
+        if simple_format is True:
+            return ('%s' % (datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
+        return ('[%s]: ' % (datetime.now().strftime("%d/%m/%Y | %H:%M:%S")))
+    if tmp is True:
+        if simple_format is True:
+            return ('%s' % (datetime.now().strftime("%H:%M:%S")))
+        return ('[%s]: ' % (datetime.now().strftime("%H:%M:%S")))
+    else:
+        if simple_format is True:
+            return ('%s' % (datetime.now().strftime("%d/%m/%Y")))
+        return ('[%s]: ' % (datetime.now().strftime("%d/%m/%Y")))
+
+
+def progress_bar(progress: int, total: int, init_msg='', end_msg='', tmp=0, tmp2=2):  # noqa: E501
+    '''Returns or print a progress bar.'''
+    percent = (progress * 100) / float(total)
+    if percent % 2 == 0:
+        bar = '▓' * int((percent)/tmp2) + '░' * (int((100 - percent)/tmp2))
+    else:
+        bar = '▓' * int((percent)/tmp2) + '░' * (int((100 - percent)/tmp2) + 1)
+
+    if tmp == 0:
+        if progress/total >= 1:
+            print(Fore.GREEN + '╠%s╣ %.3f %%' % (bar, percent) + ' ' + end_msg + Style.RESET_ALL, sep=' ', end='\r')  # noqa: E501
+        elif progress/total >= .5:
+            print(Fore.YELLOW + '╠%s╣ %.3f %%' % (bar, percent) + ' ' + init_msg + Style.RESET_ALL, sep=' ', end='\r')  # noqa: E501
+        else:
+            print(Fore.RED + '╠%s╣ %.3f %%' % (bar, percent) + ' ' + init_msg + Style.RESET_ALL, sep=' ', end='\r')  # noqa: E501
+    else:
+        if progress/total >= 1:
+            return ('╠%s╣ %.3f %%' % (bar, percent) + ' ' + end_msg + '\r', "#00FF00")  # noqa: E501
+        elif progress/total >= .5:
+            return ('╠%s╣ %.3f %%' % (bar, percent) + ' ' + init_msg + '\r', "#FFFF00")  # noqa: E501
+        else:
+            return ('╠%s╣ %.3f %%' % (bar, percent) + ' ' + init_msg + '\r', "#FF0000")  # noqa: E501
+
+
+def count(table: list, tmp=1, tmp2=0):
+    '''Will return the number of cells/ants of a grid.'''
+
+    count = 0
+    for y in range(len(table)):
+        for x in range(len(table[0])):
+            if tmp:
+                count += (table[y][x][0] if table[y][x][0] > 0 else 0)
+            else:
+                count += (table[y][x] if table[y][x] > 0 else 0)
+    percentage = ((count * 100) / ((len(table) - 2) * (len(table[0]) - 2)))
+    if tmp2:
+        return count
+    return str(count) + ' / ' + str((len(table) - 2) * (len(table[0]) - 2)) + ' ' + '({:.02f}%)'.format(percentage)  # noqa: E501
+
+
+def start(height, width, value=-1):
+    '''Base template of a langton's cell's grid.'''
+
+    return ([[-1 for _ in range(width)] for _ in range(height)])
+
+
+def start_ant(height, width, value=[0, "N"]):
+    '''Base template of a langton's ant's grid.'''
+
+    return ([[[0, "N"] for _ in range(width)] for _ in range(height)])
+
+
+def render(table: list):
+    '''Print a grid in a readable way.'''
+
+    for index in range(len(table)):
+        print(*table[index], end='\n')
+
+
+def case_selector(direction: str, cell_state: int, multiplier=1):
+    '''Translate the direction of an ant to a grid logic.'''
+
+    if cell_state:
+        return [[0, multiplier], [-multiplier, 0], [0, -multiplier], [multiplier, 0]][["E", "N", "O", "S"].index(direction)]  # noqa: E501
+    return multiplier * [[0, -multiplier], [multiplier, 0], [0, multiplier], [-multiplier, 0]][["E", "N", "O", "S"].index(direction)]  # noqa: E501
+
+
+def interval(x: int, length_grid: int):
+    '''Enable the grid to be a tor.\n /!\\ Bug: When placed at grid_length-2 * R² destroy cell'''  # noqa: E501
+    if 1 <= x < length_grid-1:  # If the ant is in the grid
+        return x
+    elif x == 0:    # Teleport the ant to the other side
+        return length_grid-2
+    return (x % (length_grid-1)) + 1
+
+
+def next_gen(previous_table_main: list, previous_table_ant: list, width: int, height: int, multiplier=1, steps=1):  # noqa:501
+    '''
+    Compute all steps, then return the next grid based on the previous one.
+    '''
+
+    new_table_main = start(len(previous_table_main), len(previous_table_main[0]))  # noqa: E501
+    new_table_ant = start_ant(len(previous_table_ant), len(previous_table_ant[0]))  # noqa: E501
+    angles = ["E", "N", "O", "S"]
+
+    for x in range(1, len(previous_table_ant[0]) - 1):
+        for y in range(1, len(previous_table_ant) - 1):
+            # [Cell State], [Turn, Cell change, Movement], [Cell color], [Rule Name]  # noqa: E501
+
+            # Keep drawing cells if state unchanged
+            if previous_table_main[y][x] == 1:
+                new_table_main[y][x] = 1
+
+            if previous_table_ant[y][x][0]:     # If there is an ant
+                if previous_table_main[y][x] == -1:     # If the cell is white
+                    directions = case_selector(previous_table_ant[y][x][1], -1, multiplier)    # Select ant's new orientation  # noqa: E501
+                    new_table_ant[interval(y+directions[0], height)][interval(x+directions[1], width)] = [1, angles[(angles.index(previous_table_ant[y][x][1])-1) % 4]]  # Set new ant's attributes  # noqa: E501
+                else:
+                    directions = case_selector(previous_table_ant[y][x][1], 1, multiplier)  # noqa: E501
+                    new_table_ant[interval(y-directions[0], height)][interval(x-directions[1], width)] = [1,  angles[(angles.index(previous_table_ant[y][x][1])+1) % 4]]  # noqa: E501
+                new_table_main[y][x] = -previous_table_main[y][x]   # Switch cell state  # noqa: E501
+
+    return (new_table_main, new_table_ant)
+
+
+def conv_rgb_hex(red, green, blue):
+    return "#{:02x}{:02x}{:02x}".format(int(red), int(green), int(blue))
+
+
+def conv_hex_rgb(color: str):
+    return (ImageColor.getcolor(color, "RGB"))
 
 
 def rectangle(grid, x, y, x_length, y_length, value=1):
@@ -38,34 +173,37 @@ def rectangle(grid, x, y, x_length, y_length, value=1):
 
     for xp in range(x_length):
         for yp in range(y_length):
-            grid[y+yp][x+xp] = value
+            grid[y+yp][x+xp] = value    # y+yp means clic coordinates plus iteration  # noqa: E501
 
 
+# /=> Functions END <=/
 
-# Simulation parameters
+
+# /=> Simulation parameters <=/
 height, width, posx, posy, pause = 100, 100, 10, 10, -1
-# Dimensions correction (Border)
-height += 2
-width += 2
+height += 2; width += 2  # noqa: E702
+
 
 main_grid, ant_grid = start(height, width), start_ant(height, width)
 
 action, cursor_size_width, cursor_size_height = (rectangle), 1, 1
 
 
-
-generation, number_of_generations, steps_per_gen, cell = 0, 20000, 1, 8
+generation, number_of_generations, steps_per_gen, cell = 0, 30000, 1, 8
 slide = 1
 
-# [Movement Behaviour: str], [Change Rule: 0,1], [Ant Color], [Rule Name]
-rules = [["#00ff00", "#ff00ff"], "LANGTON ANT"]
+# [Ant Color], [Rule Name]
+rules = [["#ff00ff", "#00ff00"], "LANGTON ANT"]
 
 dimensions = ((width * (cell)), (height * (cell)))
-# END
+# /=> Simulation parameters END <=/
 
 
 def set_action(new_action=rectangle):
-    '''Allow to change the function defined to the variable "action".'''
+    '''
+    Allow to change the function defined to the variable "action".
+    For example, we can assign it to a rectangle, circle, or specific structure
+    '''
 
     global action
     action = new_action
@@ -73,10 +211,7 @@ def set_action(new_action=rectangle):
 
 def stop_sim():
     '''Set the simulation parameters so that it stops itself.'''
-
-    global generation, number_of_generations, pause
-    generation = number_of_generations
-    pause = 1
+    window.destroy()
 
 
 def clear_grid():
@@ -91,16 +226,15 @@ def clear_grid():
 def fill_grid(grid=main_grid, value=-1, tmp=1):
     '''Fill both grids.'''
 
-    for row in range(1, height-1):
+    for row in range(1, height-1):  # Ignore the edges, they don't need to be filled  # noqa: E501
         for column in range(1, width-1):
             if tmp:
                 grid[row][column] = value
             else:
                 grid[row][column] = -(grid[row][column])
 
-# Simulation parameters END
 
-# Window def
+# /=> Window Definition <=/
 
 
 window = Tk()
@@ -110,9 +244,9 @@ window.state('zoomed')
 window.geometry('%dx%d' % (screen_width - 50, screen_height - 50))
 
 
-# Window def END
+# /=> Window Definition END <=/
 
-# Menu def
+# /=> Menu Definition <=/
 
 window_menu = Menu(window)
 
@@ -123,9 +257,11 @@ File_selector.add_command(label='Exit', command=stop_sim)
 
 
 window.config(menu=window_menu)
-# Menu def END#
 
-# Size determination #
+# /=> Menu Definition END <=/
+
+
+# /=> Size Determination <=/
 
 
 def size():
@@ -141,21 +277,30 @@ def size():
     return (cell_size, font_size)
 
 
-# Size determination END #
+# /=> Size Determination END <=/
 
 sim_graph = Label()
-sim_graph.grid(row=0, column=0)
+sim_graph.grid(row=0, column=0, rowspan=height//2, columnspan=3)
 
-Sim_stats_1 = Label(text="", background="#444444", fg='magenta', font=("Times New Roman", size()[1]))  # noqa: E501
-Sim_stats_2 = Label(text="", background="#444444", fg='magenta', font=("Times New Roman", size()[1]))  # noqa: E501
-Sim_parameters_1 = Label(text='Cursor dimensions:' + str(cursor_size_width) + 'x' + str(cursor_size_height) + ' | ' + str(action.__name__) + '    ', background="#444444", fg='#0088ff', font=("Times New Roman", size()[1]))  # noqa: E501
-Sim_progress = Label(text=progress_bar(generation, number_of_generations, tmp=1, tmp2=3)[0] + " " + str(generation) + "/" + str(number_of_generations), background="#444444", fg=progress_bar(generation, number_of_generations, tmp=1, tmp2=3)[1], font=("Times New Roman", size()[1]))  # noqa: E501
-Sim_feedback = Label(text="Nothing to report.", background="#444444", fg="#AAAAAA", font=("Times New Roman", size()[1]))  # noqa: E501
-Sim_stats_1.grid(row=1, column=0)
-Sim_stats_2.grid(row=2, column=0)
-Sim_parameters_1.grid(row=3, column=0)
-Sim_progress.grid(row=4, column=0)
-Sim_feedback.grid(row=5, column=0)
+Sim_time = Label(background="#111111", fg='#0088ff', font=("Times New Roman", size()[1]))  # noqa: E501
+Sim_date = Label(background="#111111", fg='#0088ff', font=("Times New Roman", size()[1]))  # noqa: E501
+Sim_Dimensions = Label(background="#111111", fg='#0088ff', font=("Times New Roman", size()[1]))  # noqa: E501
+Sim_stats_dimensions = Label(background="#111111", fg='#0088ff', font=("Times New Roman", size()[1]))  # noqa: E501
+Sim_feedback = Label(text="Nothing to report.", background="#111111", fg="#AAAAAA", font=("Times New Roman", size()[1]))  # noqa: E501
+Sim_generation = Label(background="#111111", fg='magenta', font=("Times New Roman", size()[1]))  # noqa: E501
+Sim_cells = Label(background="#111111", fg='magenta', font=("Times New Roman", size()[1]))  # noqa: E501
+Sim_ant = Label(background="#111111", fg='magenta', font=("Times New Roman", size()[1]))  # noqa: E501
+Sim_progress = Label(background="#111111", font=("Times New Roman", size()[1]))  # noqa: E501
+
+Sim_time.grid(row=0, column=4)
+Sim_date.grid(row=1, column=4)
+Sim_Dimensions.grid(row=2, column=4)
+Sim_stats_dimensions.grid(row=3, column=4)
+Sim_feedback.grid(row=4, column=4)
+Sim_generation.grid(row=5, column=4)
+Sim_cells.grid(row=6, column=4)
+Sim_ant.grid(row=7, column=4)
+Sim_progress.grid(row=8, column=4)
 
 
 def draw_simulation():
@@ -178,7 +323,7 @@ def draw_simulation():
 
             # Draw ant's pixels if there's an ant, based on if there's a cell underneath.  # noqa: E501
             if ant_grid[column][row][0] == 1:
-                pixels[row, column] = (255, 0, 255) if (main_grid[column][row] == 1) else (0, 255, 0)  # noqa: E501
+                pixels[row, column] = conv_hex_rgb(rules[0][0]) if (main_grid[column][row] == 1) else conv_hex_rgb(rules[0][1])  # noqa: E501
 
     # Resize the image to be bigger.
     mid_image = ((cell_grid.resize((cell_grid.size[0] * cell, cell_grid.size[1] * cell), resample=Image.NEAREST)))  # noqa: E501
@@ -188,15 +333,15 @@ def draw_simulation():
     for row in range(width):
         for column in range(height):
             if not ((column in [0, len(main_grid)-1] or row in [0, len(main_grid[0])-1])):  # noqa: E501
-                pixels[row*cell, column*cell] = (255, 0, 0) if (main_grid[column][row] == 1 or main_grid[column-1][row-1] == 1 or main_grid[column][row-1] == 1 or main_grid[column-1][row] == 1) else (0, 0, 0)  # noqa: E501
+                pixels[row*cell, column*cell] = conv_hex_rgb('#FF0000') if (main_grid[column][row] == 1 or main_grid[column-1][row-1] == 1 or main_grid[column][row-1] == 1 or main_grid[column-1][row] == 1) else conv_hex_rgb('#000000')  # noqa: E501
 
     if (cell <= x_sim <= dimensions[0]-cursor_size_width-1*cell and cell <= y_sim <= dimensions[1]-cursor_size_height-1*cell) and (dimensions[0] - (x_sim+(cursor_size_width)*cell) > 0) and (dimensions[1] - (y_sim+(cursor_size_height)*cell) > 0):  # noqa: E501
         for length_cursor in range(cursor_size_width*cell):
-            pixels[x_sim+length_cursor, y_sim-1] = (255, 0, 0)
-            pixels[x_sim+length_cursor, y_sim+cursor_size_height*cell-1] = (255, 0, 0)  # noqa: E501
+            pixels[x_sim+length_cursor, y_sim-1] = conv_hex_rgb('#FF0000')
+            pixels[x_sim+length_cursor, y_sim+cursor_size_height*cell-1] = conv_hex_rgb('#FF0000')  # noqa: E501
         for height_cursor in range(cursor_size_height*cell):
-            pixels[x_sim, y_sim+height_cursor-1] = (255, 0, 0)
-            pixels[x_sim+cursor_size_width*cell, y_sim+height_cursor-1] = (255, 0, 0)  # noqa: E501
+            pixels[x_sim, y_sim+height_cursor-1] = conv_hex_rgb('#FF0000')
+            pixels[x_sim+cursor_size_width*cell, y_sim+height_cursor-1] = conv_hex_rgb('#FF0000')  # noqa: E501
 
     final_image = ImageTk.PhotoImage(mid_image)
     sim_graph.configure(image=final_image)
@@ -208,17 +353,22 @@ def after_loop():
 
     global main_grid, ant_grid, generation, number_of_generations
 
-    Sim_stats_1.config(text='Generation n°%d | Rules "%s" | %sx%s | %s' % (generation, rules[1], dimensions[0], dimensions[1], time_log(True)))  # noqa: E501
-    Sim_stats_2.config(text='Cell count: %s | Ant count: %s' % (count(main_grid, 0), count(ant_grid)))  # noqa: E501
-    Sim_parameters_1.config(text='Cursor dimensions:' + str(cursor_size_width) + 'x' + str(cursor_size_height) + ' | ' + str(action.__name__))  # noqa: E501
-    Sim_progress.config(text=progress_bar(generation, number_of_generations, tmp=1, tmp2=3)[0] + " " + str(generation) + "/" + str(number_of_generations), fg=progress_bar(generation, number_of_generations, tmp=1, tmp2=3)[1])  # noqa: E501
+    Sim_time.config(text='Time: %s' % (time_log(True, True)))
+    Sim_date.config(text='Date: %s' % (time_log(True, False, False)))
+    Sim_generation.config(text="Generation: %d | Max: %d" % (generation, number_of_generations))  # noqa: E501
+    Sim_Dimensions.config(text='Dimensions: %dx%d' % dimensions)
+    Sim_cells.config(text='Cell(s): %s' % count(main_grid, 0))
+    Sim_ant.config(text='Ant(s): %s' % count(ant_grid))
+    Sim_stats_dimensions.config(text='Cursor dimensions:' + str(cursor_size_width) + 'x' + str(cursor_size_height) + ' | ' + str(action.__name__))  # noqa: E501
+    Sim_progress.config(text=progress_bar(generation, number_of_generations, tmp=1, tmp2=4)[0], fg=progress_bar(generation, number_of_generations, tmp=1, tmp2=4)[1])  # noqa: E501
+
     window.update()
     draw_simulation()
     if pause == -1:
         draw_simulation()
         window.after(func=after_loop, ms=1)
-    elif generation < number_of_generations:
-        for iteration in range(steps_per_gen):
+    elif generation < number_of_generations:    # If the max number of generations has not been reached yet...  # noqa: E501
+        for iteration in range(steps_per_gen):  # Number of repeats
             if steps_per_gen > 1:
                 progress_bar(iteration, steps_per_gen-1)
             main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height, slide)  # noqa: E501
@@ -230,16 +380,16 @@ def after_loop():
 
 grid_edit = IntVar()
 grid_Checkbutton = Checkbutton(bg="#444444", text="Edit Cells", variable=grid_edit)  # noqa: E501
-grid_Checkbutton.place(x=1200, y=100)
+grid_Checkbutton.grid(row=0, column=5)
 
 Simulation_fill_white = Button(text='Fill White', command=lambda: fill_grid(main_grid, value=-1))  # noqa: E501
 Simulation_fill_black = Button(text='Fill Black', command=lambda: fill_grid(main_grid, value=1))  # noqa: E501
 Simulation_reverse = Button(text='Invert White/Black', command=lambda: fill_grid(main_grid, tmp=0))  # noqa: E501
 Simulation_clear = Button(text='Clear', command=lambda: clear_grid())
-Simulation_fill_white.place(x=1200, y=200)
-Simulation_fill_black.place(x=1200, y=300)
-Simulation_reverse.place(x=1200, y=400)
-Simulation_clear.place(x=1200, y=500)
+Simulation_fill_white.grid(row=1, column=5)
+Simulation_fill_black.grid(row=2, column=5)
+Simulation_reverse.grid(row=3, column=5)
+Simulation_clear.grid(row=4, column=5)
 
 
 def place_action(eventorigin):
@@ -264,9 +414,9 @@ def key_press(event):
 
     press = event.keysym
     if press == 'space':
-        pause = -(pause)
+        pause = -(pause)    # Toggle the pause state
     elif press == 'f':
-        if pause == 1:
+        if pause == 1:  # If not paused, then pause the simulation
             pause = -(pause)
             main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height, slide)  # noqa: E501
             generation += 1
@@ -275,23 +425,23 @@ def key_press(event):
             generation += 1
     elif press == 'Tab':
         print('Attempted a forced window closure by pressing TAB at generation n° %d at %s  ' % (generation, time_log(True)))  # noqa: E501
-        stop_sim()
         pause = 1
+        stop_sim()
     elif press == 'Up':
-        if cursor_size_height < height-2:
+        if cursor_size_height < height-2:   # If size limit not reached
             cursor_size_height += 1
     elif press == 'Down':
-        if 1 < cursor_size_height:
+        if 1 < cursor_size_height:  # If size bigger than 1
             cursor_size_height -= 1
     elif press == 'Right':
-        if cursor_size_width < width-2:
+        if cursor_size_width < width-2:  # If size limit not reached
             cursor_size_width += 1
     elif press == 'Left':
-        if 1 < cursor_size_width:
+        if 1 < cursor_size_width:   # If size bigger than 1
             cursor_size_width -= 1
 
 
-# START
+# /=> Start <=/
 
 window.bind('<Key>', key_press)
 sim_graph.bind("<B1-Motion>", place_action)

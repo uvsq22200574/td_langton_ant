@@ -1,0 +1,26 @@
+Bonjour, pour le projet voici où nous en sommes:
+J'ai réussi à faire fonctionner le programme (Comme on peut le voir dans la capture d'écran qui sera envoyée plus tard), on peut faire la simulation de la fourmi de Langton. Cependant, le projet n'est pas terminé à 100%. En effet, certaines fonctionalités, qu'elles soient obligatoires ou optionnelles, ont déjà été implémentées mais il manque certaines très importantes.
+
+Avant de lister ce qui à déjà été fait, il faut que je puisse vous ajouter au Github du Projet. Pour cela, vous pouvez envoyer le nom de votre compte (uvsq+n° étudiant) et vous serez inclus s'il n'y a aucune erreur.
+Vous ne trouverez pas le code complet sur le Github, pour faire croire que le projet à été fait depuis le début. Il est préférable d'avoir le code déjà existant, donc vous le trouverez sur Discord. Faites attention, les deux fichiers doivent être dans le même dossier, sinon les fonctions ne seront pas correctement importées.
+
+Voici ce qui à déjà été fait (Liste non exhaustive):
+- Simulation d'une fourmi
+- Simulation de plusieurs fourmis (*Sauf si deux fourmis sont dans la même case)
+- Système de Pause
+- Système de passage d'étape (Faire une étape à la fois)
+- Système de placement de fourmi (Clic Gauche)
+- Créer une case à cocher (ou autre si mieux) pour éditer la grille des fourmis ou la grille des cellules
+- Comptage du nombre de carré noir (Simple)
+- Affichage du curseur
+
+Voici ce qu'il manque (Liste non exhaustive):
+- Système de sauvegarde (Á faire quand la simulation est en pause)
+- Système de chargement de sauvegarde (Á faire quand la simulation est en pause)
+- Système de pause / passage d'étape associé à un bouton (Associé aux touches "Espace" et "f")
+- Système de calcul de plusieurs étapes par génération
+- Système pour revenir en arrière dans la simulation
+- *Prise en charge de plusieurs fourmis/case
+- Créer un menu graphique avec les boutons
+
+Je vous conseille de regarder le code et de ne pas hésiter à demander s'il y a des parties que vous ne comprenez pas. Pour information, la simulation commence dans l'état "En pause", et les fourmis sont à placer avec le clic gauche, le clic droit supprime la fourmi.

@@ -1,4 +1,4 @@
-from langton_code import start, start_ant, time_log, count, read, read_ant, next_gen, progress_bar, render
+from langton_code_legacy import start, start_ant, time_log, count, next_gen, progress_bar, render
 from tkinter import Tk, Canvas, Label, Menu
 from ctypes import windll
 
@@ -143,7 +143,7 @@ canevas.grid(row=0, column=0)
 
 text1 = Label(text="Test", background="#000000", fg='magenta', font=("Times New Roman", size()[1]))
 text2 = Label(text='Cursor dimensions:' + str(cursor_size_width) + 'x' + str(cursor_size_height) + ' | ' + str(action.__name__) +'    ', background="#000000", fg='#0088ff', font=("Times New Roman", size()[1]))
-text3 = Label(text=progress_bar(generation, number_of_generations, mode=1)[0] + " " + str(generation) + "/" + str(number_of_generations), background="#000000", fg=progress_bar(generation, number_of_generations, mode=1)[1], font=("Times New Roman", size()[1]))
+text3 = Label(text=progress_bar(generation, number_of_generations, tmp=1)[0] + " " + str(generation) + "/" + str(number_of_generations), background="#000000", fg=progress_bar(generation, number_of_generations, tmp=1)[1], font=("Times New Roman", size()[1]))
 text1.grid(row=1, column=0)
 text2.grid(row=2, column=0)
 text3.grid(row=3, column=0)
@@ -161,10 +161,10 @@ def update_table(debug=0):
                 main_grid[h][w] = -1
                 canevas.create_rectangle(posx, posy, posx + cell, posy + cell, fill='#cc0000', outline='#1c1c1c')
 
-            if read(main_grid, w, h) == 1:
+            if main_grid[h][w] == 1:
                 canevas.create_rectangle(posx, posy, posx + cell, posy + cell, fill="#000000")
 
-            if read_ant(ant_grid, w, h):
+            if ant_grid[h][w][0] == 1:
                 canevas.create_rectangle(posx, posy, posx + cell, posy + cell, fill=current_rules[2])
 
 
@@ -173,7 +173,7 @@ def after_loop():
     update_table()
     text1.config(text='Generation n°%d | Rules "%s" | %sx%s | %s | Cell count: %s' % (generation, current_rules[3], dimensions[0], dimensions[1], time_log(1), count(ant_grid)))
     text2.config(text='Cursor dimensions:' + str(cursor_size_width) + 'x' + str(cursor_size_height) + ' | ' + str(action.__name__))
-    text3.config(text=progress_bar(generation, number_of_generations, mode=1)[0] + " " + str(generation) + "/" + str(number_of_generations), fg=progress_bar(generation, number_of_generations, mode=1)[1])
+    text3.config(text=progress_bar(generation, number_of_generations, tmp=1)[0] + " " + str(generation) + "/" + str(number_of_generations), fg=progress_bar(generation, number_of_generations, tmp=1)[1])
     window.update()
     if pause == -1:
         canevas.delete('all')
