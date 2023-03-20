@@ -73,7 +73,7 @@ def count(table: list, tmp=1, tmp2=0):
     percentage = ((count * 100) / ((len(table) - 2) * (len(table[0]) - 2)))
     if tmp2:
         return count
-    return str(count) + ' / ' + str((len(table) - 2) * (len(table[0]) - 2)) + ' ' + '({:.02f}%)'.format(percentage)  # noqa: E501
+    return ('%.5d / %d (%.2f%%)' % (count, (len(table) - 2) * (len(table[0]) - 2), percentage))  # noqa: E501
 
 
 def start(height, width, value=-1):
@@ -189,7 +189,7 @@ main_grid, ant_grid = start(height, width), start_ant(height, width)
 action, cursor_size_width, cursor_size_height = (rectangle), 1, 1
 
 
-generation, number_of_generations, steps_per_gen, cell = 0, 30000, 1, 8
+generation, number_of_generations, steps_per_gen, cell = 0, 20000, 1, 8
 slide = 1
 
 # [Ant Color], [Rule Name]
@@ -353,14 +353,16 @@ def after_loop():
 
     global main_grid, ant_grid, generation, number_of_generations
 
-    Sim_time.config(text='Time: %s' % (time_log(True, True)))
-    Sim_date.config(text='Date: %s' % (time_log(True, False, False)))
-    Sim_generation.config(text="Generation: %d | Max: %d" % (generation, number_of_generations))  # noqa: E501
-    Sim_Dimensions.config(text='Dimensions: %dx%d' % dimensions)
-    Sim_cells.config(text='Cell(s): %s' % count(main_grid, 0))
-    Sim_ant.config(text='Ant(s): %s' % count(ant_grid))
-    Sim_stats_dimensions.config(text='Cursor dimensions:' + str(cursor_size_width) + 'x' + str(cursor_size_height) + ' | ' + str(action.__name__))  # noqa: E501
-    Sim_progress.config(text=progress_bar(generation, number_of_generations, tmp=1, tmp2=4)[0], fg=progress_bar(generation, number_of_generations, tmp=1, tmp2=4)[1])  # noqa: E501
+    if pause == 1:
+        Sim_time.config(text='Time: %s' % (time_log(True, True)))
+        Sim_date.config(text='Date: %s' % (time_log(True, False, False)))
+        Sim_generation.config(text="Generation: %d | Max: %d" % (generation, number_of_generations))  # noqa: E501
+        Sim_cells.config(text='Cell(s): %s' % count(main_grid, 0))
+        Sim_ant.config(text='Ant(s): %s' % count(ant_grid))
+        Sim_progress.config(text=progress_bar(generation, number_of_generations, tmp=1, tmp2=4)[0], fg=progress_bar(generation, number_of_generations, tmp=1, tmp2=4)[1])  # noqa: E501
+
+    if generation % 10 == 0:
+        Sim_stats_dimensions.config(text='Cursor dimensions:' + str(cursor_size_width) + 'x' + str(cursor_size_height) + ' | ' + str(action.__name__))  # noqa: E501
 
     window.update()
     draw_simulation()
@@ -399,6 +401,9 @@ def place_action(eventorigin):
     grid_and_action = [(ant_grid, [1, "N"]), (main_grid, 1)][int(grid_edit.get())]  # noqa: E501
     action(grid_and_action[0], reg_x, reg_y, cursor_size_width, cursor_size_height, grid_and_action[1])  # noqa: E501
 
+    Sim_cells.config(text='Cell(s): %s' % count(main_grid, 0))
+    Sim_ant.config(text='Ant(s): %s' % count(ant_grid))
+
 
 def destroy_cell(eventorigin):
     '''Action of destroying a cell.'''
@@ -407,15 +412,27 @@ def destroy_cell(eventorigin):
     grid_and_action = [(ant_grid, [0, "N"]), (main_grid, -1)][int(grid_edit.get())]  # noqa: E501
     action(grid_and_action[0], reg_x, reg_y, cursor_size_width, cursor_size_height, grid_and_action[1])  # noqa: E501
 
+    Sim_cells.config(text='Cell(s): %s' % count(main_grid, 0))
+    Sim_ant.config(text='Ant(s): %s' % count(ant_grid))
+
 
 def key_press(event):
     '''Assign actions to keyboard key.'''
     global pause, main_grid, ant_grid, generation, cursor_size_height, cursor_size_width  # noqa: E501
 
+    Sim_Dimensions.config(text='Dimensions: %dx%d' % dimensions)
     press = event.keysym
     if press == 'space':
         pause = -(pause)    # Toggle the pause state
     elif press == 'f':
+        Sim_time.config(text='Time: %s' % (time_log(True, True)))
+        Sim_date.config(text='Date: %s' % (time_log(True, False, False)))
+        Sim_generation.config(text="Generation: %d | Max: %d" % (generation, number_of_generations))  # noqa: E501
+        Sim_cells.config(text='Cell(s): %s' % count(main_grid, 0))
+        Sim_ant.config(text='Ant(s): %s' % count(ant_grid))
+        Sim_stats_dimensions.config(text='Cursor dimensions:' + str(cursor_size_width) + 'x' + str(cursor_size_height) + ' | ' + str(action.__name__))  # noqa: E501
+        Sim_progress.config(text=progress_bar(generation, number_of_generations, tmp=1, tmp2=4)[0], fg=progress_bar(generation, number_of_generations, tmp=1, tmp2=4)[1])  # noqa: E501
+
         if pause == 1:  # If not paused, then pause the simulation
             pause = -(pause)
             main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height, slide)  # noqa: E501
