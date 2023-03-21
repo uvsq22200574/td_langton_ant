@@ -1,4 +1,4 @@
-from tkinter import Tk, Label, Menu, Checkbutton, IntVar, Button
+from tkinter import Tk, Label, Menu, Checkbutton, IntVar, Button, Scale
 from PIL import Image, ImageTk, ImageColor
 from colorama import init, Fore, Style
 from platform import system
@@ -189,7 +189,7 @@ main_grid, ant_grid = start(height, width), start_ant(height, width)
 action, cursor_size_width, cursor_size_height = (rectangle), 1, 1
 
 
-generation, number_of_generations, steps_per_gen, cell = 0, 20000, 1, 8
+generation, number_of_generations, cell = 0, 20000, 8
 slide = 1
 
 # [Ant Color], [Rule Name]
@@ -210,9 +210,9 @@ def set_action(new_action=rectangle):
 
 
 def stop_sim():
-    '''Set the simulation parameters so that it stops itself.'''
-    pause = 1
+    '''Stop the simulation.'''
     window.destroy()
+    pause = 1
 
 
 def clear_grid():
@@ -293,6 +293,9 @@ Sim_cells = Label(background="#111111", fg='magenta', font=("Times New Roman", s
 Sim_ant = Label(background="#111111", fg='magenta', font=("Times New Roman", size()[1]))  # noqa: E501
 Sim_progress = Label(background="#111111", font=("Times New Roman", size()[1]))  # noqa: E501
 
+steps_per_gen = IntVar()
+scale_steps = Scale(window, variable=steps_per_gen, from_=1, to=1000, bg="#aa0000", length=375, sliderlength=45, troughcolor="#000000", font=("Times New Roman", size()[1]), orient="horizontal")  # noqa: 501
+
 Sim_time.grid(row=0, column=4)
 Sim_date.grid(row=1, column=4)
 Sim_Dimensions.grid(row=2, column=4)
@@ -302,6 +305,7 @@ Sim_generation.grid(row=5, column=4)
 Sim_cells.grid(row=6, column=4)
 Sim_ant.grid(row=7, column=4)
 Sim_progress.grid(row=8, column=4)
+scale_steps.grid(row=9, column=4)
 
 
 def draw_simulation():
@@ -371,11 +375,11 @@ def after_loop():
         draw_simulation()
         window.after(func=after_loop, ms=1)
     elif generation < number_of_generations:    # If the max number of generations has not been reached yet...  # noqa: E501
-        for iteration in range(steps_per_gen):  # Number of repeats
-            if steps_per_gen > 1:
-                progress_bar(iteration, steps_per_gen-1)
+        for iteration in range(int(steps_per_gen.get())):  # Number of repeats
+            if int(steps_per_gen.get()) > 1:
+                progress_bar(iteration, int(steps_per_gen.get())-1)
             main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height, slide)  # noqa: E501
-        generation += steps_per_gen
+        generation += int(steps_per_gen.get())
         window.after(func=after_loop, ms=1)
     else:
         window.destroy()
