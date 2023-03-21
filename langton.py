@@ -211,6 +211,7 @@ def set_action(new_action=rectangle):
 
 def stop_sim():
     '''Set the simulation parameters so that it stops itself.'''
+    pause = 1
     window.destroy()
 
 
