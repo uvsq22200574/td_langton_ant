@@ -1,4 +1,4 @@
-from tkinter import Tk, Label, Menu, Checkbutton, IntVar, Button
+from tkinter import Tk, Label, Checkbutton, IntVar, Button
 from PIL import Image, ImageTk
 from colorama import init, Fore, Style
 from platform import system
@@ -9,37 +9,37 @@ init()
 Better with a font with ligatures, you can download 'Fira Code' at this link:
 Font Page: https://github.com/tonsky/FiraCode
 Direct Download: https://github.com/tonsky/FiraCode/releases/download/6.2/Fira_Code_v6.2.zip  # noqa: E501
+Do not forget to configure VS Code to use that font and enable ligatures.
 
-This programm requires to have installed libraries not pre-installed: Pillow ; colorama  # noqa: E501
+This programm requires to have installed libraries not pre-installed: Pillow ; colorama.  # noqa: E501
 To install libraries, open a terminal and write " pip install {library1 library2 libraryx} ".  # noqa: E501
 Please follow instructions given at the beginning when running the programm. (Soon™)  # noqa: E501
-
 """
-
 
 # /=> System Compatibility <=/
 
-
-if system() == 'Windows':
+if operating_system := system() == 'Windows':
     from ctypes import windll
     user32 = windll.user32
     user32.SetProcessDPIAware()
     screen_width, screen_height = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)  # noqa: E501
-else:
+elif operating_system == 'Linux':
     from Xlib.display import Display
     screen = Display(':0').screen()
     screen_width, screen_height = screen.width_in_pixels, screen.height_in_pixels  # noqa: E501
-
+elif operating_system == '':
+    raise Exception("Could not determine the operating system.")
 
 # /=> System Compatibility END <=/
-
 
 # /=> Dependancies <=/
 
 
 def time_log(simple_format=False, tmp=False, tmp2=False):  # noqa: E501
-    from datetime import datetime
     '''Will estimate the precise time at which it has been executed.'''
+
+    from datetime import datetime
+
     if tmp2 is True:
         if simple_format is True:
             return ('%s' % (datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
@@ -82,16 +82,16 @@ def count(table: list, tmp=1, tmp2=0):
     '''Will return the number of cells/ants of a grid.'''
 
     count = 0
-    for y in range(len(table)):
-        for x in range(len(table[0])):
+    for row in range(len(table)):
+        for column in range(len(table[0])):
             if tmp:
-                count += (table[y][x][0] if table[y][x][0] > 0 else 0)
+                count += (table[row][column][0] if table[row][column][0] > 0 else 0)  # noqa: E501
             else:
-                count += (table[y][x] if table[y][x] > 0 else 0)
+                count += (table[row][column] if table[row][column] > 0 else 0)
     percentage = ((count * 100) / ((len(table) - 2) * (len(table[0]) - 2)))
     if tmp2:
         return count
-    return str(count) + ' / ' + str((len(table) - 2) * (len(table[0]) - 2)) + ' ' + '({:.02f}%)'.format(percentage)  # noqa: E501
+    return "%.5d / %.5d (%.3f%%)" % (count, (len(table) - 2) * (len(table[0]) - 2), percentage)  # noqa: E501
 
 
 def start(height, width, value=-1):
@@ -116,13 +116,13 @@ def render(table: list):
 def case_selector(direction: str, cell_state: int, multiplier=1):
     '''Translate the direction of an ant to a grid logic.'''
 
-    if cell_state:
+    if cell_state:  # If there a black cell, use set of rules, else use inverse
         return [[0, multiplier], [-multiplier, 0], [0, -multiplier], [multiplier, 0]][["E", "N", "O", "S"].index(direction)]  # noqa: E501
     return multiplier * [[0, -multiplier], [multiplier, 0], [0, multiplier], [-multiplier, 0]][["E", "N", "O", "S"].index(direction)]  # noqa: E501
 
 
 def interval(x: int, length_grid: int):
-    '''Enable the grid to be a tor.\n /!\\ Bug: When placed at grid_length-2 * R² destroy cell'''
+    '''Enable the grid to be a tor.\n /!\\ Bug: When placed at grid_length-2 * R² destroy cell.'''  # noqa: E501
     if 1 <= x < length_grid-1:  # If the ant is in the grid
         return x
     elif x == 0:    # Teleport the ant to the other side
@@ -130,7 +130,7 @@ def interval(x: int, length_grid: int):
     return (x % (length_grid-1)) + 1
 
 
-def next_gen(previous_table_main: list, previous_table_ant: list, width: int, height: int, multiplier=1, steps=1):  # noqa:501
+def next_gen(previous_table_main: list, previous_table_ant: list, width: int, height: int, multiplier=1, steps_per_cycle=1):  # noqa:501
     '''
     Compute all steps, then return the next grid based on the previous one.
     '''
@@ -139,25 +139,47 @@ def next_gen(previous_table_main: list, previous_table_ant: list, width: int, he
     new_table_ant = start_ant(len(previous_table_ant), len(previous_table_ant[0]))  # noqa: E501
     angles = ["E", "N", "O", "S"]
 
-    for x in range(1, len(previous_table_ant[0]) - 1):
-        for y in range(1, len(previous_table_ant) - 1):
-            # [Cell State], [Turn, Cell change, Movement], [Cell color], [Rule Name]  # noqa: E501
+    if steps_per_cycle != 1:
+        temp_main_grid, temp_ant_grid = previous_table_main, previous_table_ant
+        for iteration in range(steps_per_cycle):
+            for x in range(1, len(temp_ant_grid[0]) - 1):
+                for y in range(1, len(temp_ant_grid) - 1):
+                    # [Cell State], [Turn, Cell change, Movement], [Cell color], [Rule Name]  # noqa: E501
 
-            # Keep drawing cells if state unchanged
-            if previous_table_main[y][x] == 1:
-                new_table_main[y][x] = 1
+                    # Keep drawing cells if state unchanged
+                    if temp_main_grid[y][x] == 1:
+                        new_table_main[y][x] = 1
 
-            if previous_table_ant[y][x][0]:     # If there is an ant
-                if previous_table_main[y][x] == -1:     # If the cell is white
-                    directions = case_selector(previous_table_ant[y][x][1], -1, multiplier)    # Select ant's new orientation  # noqa: E501
-                    new_table_ant[interval(y+directions[0], height)][interval(x+directions[1], width)] = [1, angles[(angles.index(previous_table_ant[y][x][1])-1) % 4]]  # Set new ant's attributes  # noqa: E501
-                else:
-                    directions = case_selector(previous_table_ant[y][x][1], 1, multiplier)  # noqa: E501
-                    new_table_ant[interval(y-directions[0], height)][interval(x-directions[1], width)] = [1,  angles[(angles.index(previous_table_ant[y][x][1])+1) % 4]]  # noqa: E501
-                new_table_main[y][x] = -previous_table_main[y][x]   # Switch cell state  # noqa: E501
+                    if temp_ant_grid[y][x][0]:  # If there is an ant
+                        if temp_main_grid[y][x] == -1:  # If the cell is white
+                            directions = case_selector(temp_ant_grid[y][x][1], -1, multiplier)    # Select ant's new orientation  # noqa: E501
+                            new_table_ant[interval(y+directions[0], height)][interval(x+directions[1], width)] = [1, angles[(angles.index(temp_ant_grid[y][x][1])-1) % 4]]  # Set new ant's attributes  # noqa: E501
+                        else:
+                            directions = case_selector(temp_ant_grid[y][x][1], 1, multiplier)  # noqa: E501
+                            new_table_ant[interval(y-directions[0], height)][interval(x-directions[1], width)] = [1,  angles[(angles.index(temp_ant_grid[y][x][1])+1) % 4]]  # noqa: E501
+                        new_table_main[y][x] = -temp_main_grid[y][x]   # Switch cell state  # noqa: E501
+
+            temp_main_grid, temp_ant_grid = (new_table_main, new_table_ant)
+        return (temp_main_grid, temp_ant_grid)
+    else:
+        for x in range(1, len(previous_table_ant[0]) - 1):
+            for y in range(1, len(previous_table_ant) - 1):
+                # [Cell State], [Turn, Cell change, Movement], [Cell color], [Rule Name]  # noqa: E501
+
+                # Keep drawing cells if state unchanged
+                if previous_table_main[y][x] == 1:
+                    new_table_main[y][x] = 1
+
+                if previous_table_ant[y][x][0]:  # If there is an ant
+                    if previous_table_main[y][x] == -1:  # If the cell is white
+                        directions = case_selector(previous_table_ant[y][x][1], -1, multiplier)    # Select ant's new orientation  # noqa: E501
+                        new_table_ant[interval(y+directions[0], height)][interval(x+directions[1], width)] = [1, angles[(angles.index(previous_table_ant[y][x][1])-1) % 4]]  # Set new ant's attributes  # noqa: E501
+                    else:
+                        directions = case_selector(previous_table_ant[y][x][1], 1, multiplier)  # noqa: E501
+                        new_table_ant[interval(y-directions[0], height)][interval(x-directions[1], width)] = [1,  angles[(angles.index(previous_table_ant[y][x][1])+1) % 4]]  # noqa: E501
+                    new_table_main[y][x] = -previous_table_main[y][x]   # Switch cell state  # noqa: E501
 
     return (new_table_main, new_table_ant)
-
 
 # /=> Dependancies END <=/
 
@@ -165,11 +187,10 @@ def next_gen(previous_table_main: list, previous_table_ant: list, width: int, he
 def Rectangle(grid, x, y, x_length, y_length, value=1):
     """
     Used to create a rectangle based on coordinates.
-    Used by the place_action function, that triggers when there's a click
+    Used by the place_action function, that triggers when there's a click.
     """
 
     limit = (width-2)*(height-2)
-    print(x+x_length+1, y+y_length+1)
     if x_length*y_length >= limit:
         Sim_feedback.config(text="Cannot place a full grid.", fg="#FF0000")
         return (0)
@@ -183,7 +204,7 @@ def Rectangle(grid, x, y, x_length, y_length, value=1):
         Sim_feedback.config(text="Cannot place out of bounds in y axis.", fg="#FF0000")  # noqa: E501
         return (0)
     else:
-        Sim_feedback.config(text="No error reported.", fg="#00AA00")
+        Sim_feedback.config(text="Nothing to report.", fg="#00AA00")
 
         for xp in range(x_length):
             for yp in range(y_length):
@@ -191,7 +212,6 @@ def Rectangle(grid, x, y, x_length, y_length, value=1):
 
 
 # /=> Simulation parameters <=/
-
 
 height, width, posx, posy, pause = 100, 100, 10, 10, -1
 # Dimensions correction (Border)
@@ -202,14 +222,14 @@ main_grid, ant_grid = start(height, width), start_ant(height, width)
 
 action, cursor_size_width, cursor_size_height = (Rectangle), 1, 1
 
-
 generation, number_of_generations, steps_per_gen,  = 0, 20000, 1
 slide, cell = 1, 9
 
-# [Movement Behaviour: str], [Change Rule: 0,1], [Ant Color], [Rule Name]
+# [Ant Color], [Rule Name]
 rules = [["#00ff00", "#ff00ff"], "LANGTON ANT"]
 
 dimensions = ((width * (cell)), (height * (cell)))
+
 # /=> Simulation parameters END <=/
 
 
@@ -240,8 +260,8 @@ def clear_grid():
 def fill_grid(grid=main_grid, value=-1, tmp=1):
     '''Fill both grids.'''
 
-    for row in range(1, height-1):
-        for column in range(1, width-1):
+    for row in range(1, height-1):  # Ignore the edges
+        for column in range(1, width-1):    # Ignore the edges
             if tmp:
                 grid[row][column] = value
             else:
@@ -254,28 +274,12 @@ window = Tk()
 window.title("Langton's Ant")
 window.configure(bg="#000000")
 window.state('zoomed')
-window.geometry('%dx%d' % (screen_width - 50, screen_height - 50))
-
 
 # /=> Window DEF END <=/
-
-# /=> MENU DEF <=/
-
-window_menu = Menu(window)
-
-File_selector = Menu(window_menu, tearoff=0)
-window_menu.add_cascade(label='File', menu=File_selector)
-File_selector.add_separator()
-File_selector.add_command(label='Exit', command=stop_sim)
-
-
-window.config(menu=window_menu)
-# /=> Window DEF END <=/
-
 
 # /=> Widgets DEF <=/
 sim_graph = Label()
-sim_graph.grid(row=0, column=1, rowspan=height//2, columnspan=3)
+sim_graph.grid(row=0, column=1, rowspan=height*20, columnspan=3)
 
 Sim_time = Label(text="N/A", background="#111111", fg='#0088ff', font=("Times New Roman", 12))  # noqa: E501
 Sim_date = Label(text="N/A", background="#111111", fg='#0088ff', font=("Times New Roman", 12))  # noqa: E501
@@ -385,6 +389,7 @@ Simulation_fill_white = Button(text='Fill White', command=lambda: fill_grid(main
 Simulation_fill_black = Button(text='Fill Black', command=lambda: fill_grid(main_grid, value=1))  # noqa: E501
 Simulation_reverse = Button(text='Invert White/Black', command=lambda: fill_grid(main_grid, tmp=0))  # noqa: E501
 Simulation_clear = Button(text='Clear', command=lambda: clear_grid())
+
 Simulation_fill_white.grid(row=1, column=5)
 Simulation_fill_black.grid(row=2, column=5)
 Simulation_reverse.grid(row=3, column=5)
@@ -452,6 +457,6 @@ sim_graph.bind("<B3-Motion>", destroy_cell)
 sim_graph.bind("<Button-3>", destroy_cell)
 
 window.after(func=main_cycle, ms=0)
-
+update_widgets()
 
 window.mainloop()

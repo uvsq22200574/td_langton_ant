@@ -57,7 +57,7 @@ def count(table: list, tmp=1, tmp2=0):
     percentage = ((count * 100) / ((len(table) - 2) * (len(table[0]) - 2)))
     if tmp2:
         return count
-    return str(count) + ' / ' + str((len(table) - 2) * (len(table[0]) - 2)) + ' ' + '({:.02f}%)'.format(percentage)  # noqa: E501
+    return "%.5d / %.5d (%.3f%%)" % (count, (len(table) - 2) * (len(table[0]) - 2), percentage)
 
 
 def start(height, width, value=-1):
