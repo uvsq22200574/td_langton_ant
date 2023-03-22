@@ -1,7 +1,20 @@
 from langton_code_legacy import start, start_ant, time_log, count, next_gen, progress_bar  # noqa: E501
 from tkinter import Tk, Label, Menu, Checkbutton, IntVar, Button
 from PIL import Image, ImageTk
+from colorama import init, Fore, Style
 from platform import system
+
+
+"""
+Better with a font with ligatures, you can download 'Fira Code' at this link:
+Font Page: https://github.com/tonsky/FiraCode
+Direct Download: https://github.com/tonsky/FiraCode/releases/download/6.2/Fira_Code_v6.2.zip  # noqa: E501
+
+This programm requires to have installed libraries not pre-installed: Pillow ; colorama  # noqa: E501
+To install libraries, open a terminal and write " pip install {library1 library2 libraryx} ".  # noqa: E501
+Please follow instructions given at the beginning when running the programm. (Soon™)  # noqa: E501
+
+"""
 
 
 # /=> System Compatibility <=/
@@ -15,7 +28,7 @@ if system() == 'Windows':
 else:
     from Xlib.display import Display
     screen = Display(':0').screen()
-    print(screen.width_in_pixels, screen.height_in_pixels)
+    screen_width, screen_height = screen.width_in_pixels, screen.height_in_pixels  # noqa: E501
 
 
 # /=> System Compatibility END <=/
@@ -177,6 +190,16 @@ Sim_progress.grid(row=8, column=0)
 # /=> Widgets DEF END <=/
 
 
+def update_widgets():
+    Sim_time.config(text='Time: %s' % (time_log(True, True)))
+    Sim_date.config(text='Date: %s' % (time_log(True, False, False)))
+    Sim_generation.config(text="Generation: %.5d | Max: %.5d" % (generation, number_of_generations))  # noqa: E501
+    Sim_cells.config(text='Cell(s): %s' % count(main_grid, 0))
+    Sim_ant.config(text='Ant(s): %s' % count(ant_grid))
+    Sim_progress.config(text=progress_bar(generation, number_of_generations, tmp=1, tmp2=4)[0], fg=progress_bar(generation, number_of_generations, tmp=1, tmp2=4)[1])  # noqa: E501
+    Sim_stats_dimensions.config(text='Cursor dimensions: %dx%d | %s' % (cursor_size_width, cursor_size_height, str(action.__name__)))  # noqa: E501
+
+
 def draw_simulation():
     '''Function used for the graphic aspect of the code.'''
 
@@ -228,14 +251,7 @@ def main_cycle():
     global main_grid, ant_grid, generation, number_of_generations
 
     if pause == 1:
-        Sim_time.config(text='Time: %s' % (time_log(True, True)))
-        Sim_date.config(text='Date: %s' % (time_log(True, False, False)))
-        Sim_generation.config(text="Generation: %.5d | Max: %.5d" % (generation, number_of_generations))  # noqa: E501
-        Sim_cells.config(text='Cell(s): %s' % count(main_grid, 0))
-        Sim_ant.config(text='Ant(s): %s' % count(ant_grid))
-        Sim_progress.config(text=progress_bar(generation, number_of_generations, tmp=1, tmp2=4)[0], fg=progress_bar(generation, number_of_generations, tmp=1, tmp2=4)[1])  # noqa: E501
-        if generation % 10 == 0:
-            Sim_stats_dimensions.config(text='Cursor dimensions: %dx%d | %s' % (cursor_size_width, cursor_size_height, str(action.__name__)))  # noqa: E501
+        update_widgets()
 
     window.update()
     draw_simulation()
@@ -268,16 +284,18 @@ def place_action(eventorigin):
     '''Action of creating a cell.'''
 
     reg_x, reg_y = (eventorigin.x) // cell, (eventorigin.y) // cell
-    grid_and_action = [(ant_grid, [1, "N"]), (main_grid, 1)][int(grid_edit.get())]  # noqa: E501
-    action(grid_and_action[0], reg_x, reg_y, cursor_size_width, cursor_size_height, grid_and_action[1])  # noqa: E501
+    if reg_x >= 0 and reg_y >= 0:
+        grid_and_action = [(ant_grid, [1, "N"]), (main_grid, 1)][int(grid_edit.get())]  # noqa: E501
+        action(grid_and_action[0], reg_x, reg_y, cursor_size_width, cursor_size_height, grid_and_action[1])  # noqa: E501
 
 
 def destroy_cell(eventorigin):
     '''Action of destroying a cell.'''
 
     reg_x, reg_y = (eventorigin.x) // cell, (eventorigin.y) // cell
-    grid_and_action = [(ant_grid, [0, "N"]), (main_grid, -1)][int(grid_edit.get())]  # noqa: E501
-    action(grid_and_action[0], reg_x, reg_y, cursor_size_width, cursor_size_height, grid_and_action[1])  # noqa: E501
+    if reg_x >= 0 and reg_y >= 0:
+        grid_and_action = [(ant_grid, [0, "N"]), (main_grid, -1)][int(grid_edit.get())]  # noqa: E501
+        action(grid_and_action[0], reg_x, reg_y, cursor_size_width, cursor_size_height, grid_and_action[1])  # noqa: E501
 
 
 def key_press(event):
@@ -289,6 +307,7 @@ def key_press(event):
     if press == 'space':
         pause = -(pause)
     elif press == 'f':
+        update_widgets()
         if pause == 1:
             pause = -(pause)
             main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height, slide, steps_per_gen)  # noqa: E501
