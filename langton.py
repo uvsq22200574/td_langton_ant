@@ -1,7 +1,12 @@
-from tkinter import Tk, Label, Checkbutton, IntVar, Button
+from tkinter import Tk, Label, Checkbutton, IntVar, Button, simpledialog
 from PIL import Image, ImageTk
 from colorama import init, Fore, Style
 from platform import system
+from os import path, listdir, mkdir
+from uuid import uuid4
+from json import dumps, load
+from time import time
+from datetime import datetime
 init()
 
 
@@ -18,15 +23,21 @@ Please follow instructions given at the beginning when running the programm. (So
 
 # /=> System Compatibility <=/
 
+# Set current file path in the variable
+ROOT_DIR = path.dirname(path.abspath(__file__))
+
 if operating_system := system() == 'Windows':
     from ctypes import windll
     user32 = windll.user32
     user32.SetProcessDPIAware()
     screen_width, screen_height = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)  # noqa: E501
+    windowState = "zoomed"
 elif operating_system == 'Linux':
     from Xlib.display import Display
     screen = Display(':0').screen()
-    screen_width, screen_height = screen.width_in_pixels, screen.height_in_pixels  # noqa: E501
+    screen_width = screen.width_in_pixels
+    screen_height = screen.height_in_pixels
+    windowState = "normal"
 elif operating_system == '':
     raise Exception("Could not determine the operating system.")
 
@@ -37,8 +48,6 @@ elif operating_system == '':
 
 def time_log(simple_format=False, tmp=False, tmp2=False):  # noqa: E501
     '''Will estimate the precise time at which it has been executed.'''
-
-    from datetime import datetime
 
     if tmp2 is True:
         if simple_format is True:
@@ -181,6 +190,241 @@ def next_gen(previous_table_main: list, previous_table_ant: list, width: int, he
 
     return (new_table_main, new_table_ant)
 
+
+def save(state: dict) -> None:
+    """
+    save simulation's state
+    :state:dict an object containing the variables (main_grid, ant_grid, width, height)  # noqa: E501
+    :return: None
+    """
+    saves = listSaves()
+    save_selection_window = Tk()
+    save_selection_window.title('Select a save file or create a new one:')
+
+    # Set the geometry
+    save_selection_window.geometry("600x600")
+    save_selection_window.eval('tk::PlaceWindow . center')
+    save_selection_window.resizable(False, False)
+
+    # If there is not save, add a label
+    if len(saves) == 0:
+        emptyLabel = Label(save_selection_window, text="No saves for now", anchor='center')  # noqa: E501
+        emptyLabel.pack(pady=10)
+    # If there is saves, list them to allow update
+    else:
+        for i in range(0, len(saves)):
+            save = saves[i]
+            saveLabel = Label(save_selection_window, text=save['saveName'], anchor="w", cursor="hand2")  # noqa: E501
+            saveLabel.pack()
+            saveLabel.bind("<Button-1>", lambda event, save=save: updateEntry(state, save, save_selection_window))  # noqa: E501
+            saveDate = datetime.fromtimestamp(save['createdAt'])
+            saveUpdate = datetime.fromtimestamp(save['updatedAt'])
+            saveInfo = "Created at : " + saveDate.strftime("%d/%m/%Y, %H:%M:%S") + " - Last update : " + saveUpdate.strftime("%d/%m/%Y, %H:%M:%S")  # noqa: E501
+            dateLabel = Label(save_selection_window, text=saveInfo, anchor="w", font=("Times New Roman", 8))  # noqa: E501
+            dateLabel.pack()
+
+    newSaveButton = Button(save_selection_window, text="New save", command=lambda: newEntry(state, save_selection_window))  # noqa: E501
+    newSaveButton.pack(pady=50)
+
+    save_selection_window.mainloop()
+
+
+# Update an existing entry
+def updateEntry(state: dict, save: dict, window: Tk) -> None:
+    """
+    Update a save entry
+    :state:dict an object containing the variables(main_grid, ant_grid, width, height)  # noqa: E501
+    :save: dict an object containing the dates, id and name of the save entry
+    :window: a window tkinter
+    :return:None
+    """
+    entry = {
+        "state": state,
+        "saveName": save['saveName'],
+        "id": save['id'],
+        "createdAt": save['createdAt'],
+        "updatedAt": time()
+    }
+    saveEntry(entry)
+    window.destroy()
+    pass
+
+
+# create a new entry
+def newEntry(state: dict, window: Tk) -> None:
+    """
+    Create a new entry for the save
+    :state:dict an object containing the variables(main_grid, ant_grid, width, height)  # noqa: E501
+    :window: a window tkinter
+    :return: None
+    """
+    name = simpledialog.askstring("Choose a name", "Name :")
+    entry = {
+        "state": state,
+        "saveName": name,
+        "id": str(uuid4()),
+        "createdAt": time(),
+        "updatedAt": time()
+    }
+    saveEntry(entry)
+    window.destroy()
+
+
+# Add content to file
+def saveEntry(entry: dict) -> None:
+    """
+    Write "entry" to file
+    :entry: dict an object containing the variables(state, saveName, id, createdAt, updateAt)  # noqa: E501
+    :return: None
+    """
+    # print(entry['id'])
+
+    # Make sure save directory exists
+    filepath = _getFile(entry['id'])
+    # Open file and write to it
+    handler = open(filepath, 'w+')
+    handler.write(dumps(entry))
+    handler.close()
+
+
+# List all saves
+def listSaves() -> None:
+    """
+    Create a list of all saves
+    :return: None
+    """
+    saves = []
+    _ensureSaveDirectoryExists()
+    directory = _getSaveDirectoryPath()
+
+    for files_path in listdir(directory):
+        # check if current path is a file
+        if (path.splitext(files_path)[1] == '.json') and path.isfile(path.join(directory, files_path)):  # noqa: E501
+            saves.append(_readFile(files_path))
+    return saves
+
+
+# read a save file and return data as object
+def _readFile(filename: str) -> object:
+    """
+    Read file and parse it as json
+    :filename: name of the file
+    :return: data in json
+    """
+    filepath = path.join(_getSaveDirectoryPath(), filename)
+    handler = open(filepath)
+    state = load(handler)
+    handler.close()
+    return state
+
+
+# Create a new file path
+def _getFile(fileId: str = '') -> str:
+    """
+    Get file path
+    :fileId:str the id of the file
+    :return:str the path of the file
+    """
+    _ensureSaveDirectoryExists()
+    directory = _getSaveDirectoryPath()
+    filename = fileId + '.json'
+    filepath = path.join(directory, filename)
+    return filepath
+
+
+# Get save directory path
+def _getSaveDirectoryPath() -> str:
+    """
+    Get save directory path
+    :return: str
+    """
+    global ROOT_DIR
+    return path.join(ROOT_DIR, 'saves')
+
+
+# Make sure save directory exists in filesystem
+def _ensureSaveDirectoryExists() -> None:
+    """
+    Check if the directory exist else create it
+    Verifie si le repertoire existe et si il exite pas on le créer
+    :return:None
+    """
+    global ROOT_DIR
+    if not (path.exists(_getSaveDirectoryPath())):
+        mkdir(_getSaveDirectoryPath())
+
+
+# Save current simulation state
+def saveState() -> None:
+    """
+    Set pause and send data to save
+    :return: None
+    """
+    global pause, main_grid, ant_grid, width, height
+
+    update_widgets()
+    # First stop simulation
+    pause = -1
+    # Prepare data
+    save({
+        "main_grid": main_grid,
+        "ant_grid": ant_grid,
+        "width": width,
+        "height": height,
+        "generation": generation
+    })
+
+
+def loadState() -> None:
+    """
+    Set pause and dispaly list of save
+    :return: None
+    """
+    global pause
+    # Stop simmulation
+    pause = -1
+    saves = listSaves()
+    window = Tk()
+    window.title('Select a save file or create a new one')
+
+    # Set the geometry
+    window.geometry("600x600")
+    window.eval('tk::PlaceWindow . center')
+    window.resizable(False, False)
+
+    if len(saves) == 0:
+        emptyLabel = Label(window, text="No saves for now", anchor='center')
+        emptyLabel.pack(pady=10)
+    else:
+        for iteration in range(0, len(saves)):
+            save = saves[iteration]
+            saveLabel = Label(window, text=save['saveName'], anchor="w", cursor="hand2")  # noqa: E501
+            saveLabel.pack()
+            saveLabel.bind("<Button-1>", lambda event, save=save: loadEntry(save, window))  # noqa: E501
+            saveDate = datetime.fromtimestamp(save['createdAt'])
+            saveUpdate = datetime.fromtimestamp(save['updatedAt'])
+            saveInfo = "Created at : " + saveDate.strftime("%d/%m/%Y, %H:%M:%S") + " - Last update : " + saveUpdate.strftime("%d/%m/%Y, %H:%M:%S")  # noqa: E501
+            dateLabel = Label(window, text=saveInfo, anchor="w", font=("Times New Roman", 8))  # noqa: E501
+            dateLabel.pack()
+
+
+def loadEntry(save: dict, window: Tk) -> None:
+    """
+    Set date from json file
+    :save: dict an object containing the dates, id , name and state of the save entry  # noqa: E501
+    :window: a window tkinter
+    :return: None
+    """
+    global main_grid, ant_grid, width, height, generation
+    main_grid = save['state']['main_grid']
+    ant_grid = save['state']['ant_grid']
+    width = save['state']['width']
+    height = save['state']['height']
+    generation = save['state']['generation']
+    window.destroy()
+    update_widgets()
+
+
 # /=> Dependancies END <=/
 
 
@@ -245,16 +489,18 @@ def stop_sim():
 
     global generation, number_of_generations, pause
     generation = number_of_generations
-    pause = 1
+    pause = -1
 
 
 def clear_grid():
     '''Clear both grids and reset to it's base state.'''
 
-    global main_grid, ant_grid
+    global main_grid, ant_grid, generation
     main_grid = start(height, width)
     ant_grid = start_ant(height, width)
+    generation = 0
     draw_simulation()
+    update_widgets()
 
 
 def fill_grid(grid=main_grid, value=-1, tmp=1):
@@ -270,10 +516,11 @@ def fill_grid(grid=main_grid, value=-1, tmp=1):
 # /=> Window DEF <=/
 
 
-window = Tk()
-window.title("Langton's Ant")
-window.configure(bg="#000000")
-window.state('zoomed')
+main_window = Tk()
+main_window.title("Langton's Ant")
+main_window.configure(bg="#000000")
+main_window.state(windowState)
+main_window.geometry('%dx%d' % (screen_width - 50, screen_height - 50))
 
 # /=> Window DEF END <=/
 
@@ -368,17 +615,17 @@ def main_cycle():
     if pause == 1:
         update_widgets()
 
-    window.update()
+    main_window.update()
     draw_simulation()
     if pause == -1:
         draw_simulation()
-        window.after(func=main_cycle, ms=1)
+        main_window.after(func=main_cycle, ms=1)
     elif generation < number_of_generations:
         main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height, slide, steps_per_gen)  # noqa: E501
         generation += steps_per_gen
-        window.after(func=main_cycle, ms=1)
+        main_window.after(func=main_cycle, ms=1)
     else:
-        window.destroy()
+        main_window.destroy()
 
 
 grid_edit = IntVar()
@@ -389,18 +636,21 @@ Simulation_fill_white = Button(text='Fill White', command=lambda: fill_grid(main
 Simulation_fill_black = Button(text='Fill Black', command=lambda: fill_grid(main_grid, value=1))  # noqa: E501
 Simulation_reverse = Button(text='Invert White/Black', command=lambda: fill_grid(main_grid, tmp=0))  # noqa: E501
 Simulation_clear = Button(text='Clear', command=lambda: clear_grid())
+Simulation_save = Button(text="Save", command=lambda: saveState())
+Simulation_load = Button(text="Load", command=lambda: loadState())
 
 Simulation_fill_white.grid(row=1, column=5)
 Simulation_fill_black.grid(row=2, column=5)
 Simulation_reverse.grid(row=3, column=5)
 Simulation_clear.grid(row=4, column=5)
+Simulation_save.grid(row=5, column=5)
+Simulation_load.grid(row=6, column=5)
 
 
 def place_action(eventorigin):
     '''Action of creating a cell.'''
 
     reg_x, reg_y = (eventorigin.x) // cell, (eventorigin.y) // cell
-
     grid_and_action = [(ant_grid, [1, "N"]), (main_grid, 1)][int(grid_edit.get())]  # noqa: E501
     action(grid_and_action[0], reg_x, reg_y, cursor_size_width, cursor_size_height, grid_and_action[1])  # noqa: E501
 
@@ -420,16 +670,13 @@ def key_press(event):
     Sim_Dimensions.config(text='Dimensions: %dx%d px' % dimensions)
     press = event.keysym
     if press == 'space':
+        update_widgets()
         pause = -(pause)
     elif press == 'f':
+        pause = -1
+        main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height, slide, steps_per_gen)  # noqa: E501
+        generation += 1
         update_widgets()
-        if pause == 1:
-            pause = -(pause)
-            main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height, slide, steps_per_gen)  # noqa: E501
-            generation += 1
-        else:
-            main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height, slide, steps_per_gen)  # noqa: E501
-            generation += 1
     elif press == 'Tab':
         print('Attempted a forced window closure by pressing TAB at generation n° %d at %s  ' % (generation, time_log(True)))  # noqa: E501
         stop_sim()
@@ -450,13 +697,13 @@ def key_press(event):
 
 # /=> START <=/
 
-window.bind('<Key>', key_press)
+main_window.bind('<Key>', key_press)
 sim_graph.bind("<B1-Motion>", place_action)
 sim_graph.bind("<Button-1>", place_action)
 sim_graph.bind("<B3-Motion>", destroy_cell)
 sim_graph.bind("<Button-3>", destroy_cell)
 
-window.after(func=main_cycle, ms=0)
+main_window.after(func=main_cycle, ms=0)
 update_widgets()
 
-window.mainloop()
+main_window.mainloop()
