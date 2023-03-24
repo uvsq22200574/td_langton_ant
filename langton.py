@@ -466,7 +466,7 @@ main_grid, ant_grid = start(height, width), start_ant(height, width)
 
 action, cursor_size_width, cursor_size_height = (Rectangle), 1, 1
 
-generation, number_of_generations, steps_per_gen,  = 0, 20000, 1
+generation, number_of_generations, steps_per_gen,  = 0, 1e5, 1
 slide, cell = 1, 9
 
 # [Ant Color], [Rule Name]
