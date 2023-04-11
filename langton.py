@@ -1,8 +1,8 @@
-from tkinter import Tk, Label, Checkbutton, IntVar, Button, simpledialog
+from tkinter import Tk, Label, Checkbutton, IntVar, Button, simpledialog, PhotoImage
 from PIL import Image, ImageTk
 from colorama import init, Fore, Style
 from platform import system
-from os import path, listdir, mkdir
+from os import path, listdir, mkdir, chdir
 from uuid import uuid4
 from json import dumps, load
 from time import time
@@ -16,12 +16,13 @@ Font Page: https://github.com/tonsky/FiraCode
 Direct Download: https://github.com/tonsky/FiraCode/releases/download/6.2/Fira_Code_v6.2.zip  # noqa: E501
 Do not forget to configure VS Code to use that font and enable ligatures.
 
-This programm requires to have installed libraries not pre-installed: Pillow ; colorama.  # noqa: E501
+This programm requires to have libraries not pre-installed: Pillow ; colorama.
 To install libraries, open a terminal and write " pip install {library1 library2 libraryx} ".  # noqa: E501
 Please follow instructions given at the beginning when running the programm. (Soon™)  # noqa: E501
 """
 
 # /=> System Compatibility <=/
+chdir(path.dirname(path.realpath(__file__)))
 
 # Set current file path in the variable
 ROOT_DIR = path.dirname(path.abspath(__file__))
@@ -127,16 +128,19 @@ def case_selector(direction: str, cell_state: int, multiplier=1):
 
     if cell_state:  # If there a black cell, use set of rules, else use inverse
         return [[0, multiplier], [-multiplier, 0], [0, -multiplier], [multiplier, 0]][["E", "N", "O", "S"].index(direction)]  # noqa: E501
-    return multiplier * [[0, -multiplier], [multiplier, 0], [0, multiplier], [-multiplier, 0]][["E", "N", "O", "S"].index(direction)]  # noqa: E501
+    return [[0, -multiplier], [multiplier, 0], [0, multiplier], [-multiplier, 0]][["E", "N", "O", "S"].index(direction)]  # noqa: E501
 
 
-def interval(x: int, length_grid: int):
-    '''Enable the grid to be a tor.\n /!\\ Bug: When placed at grid_length-2 * R² destroy cell.'''  # noqa: E501
-    if 1 <= x < length_grid-1:  # If the ant is in the grid
-        return x
-    elif x == 0:    # Teleport the ant to the other side
+def interval(coord: int, length_grid: int):
+    '''Enable the grid to be a tor.\n /!\\ Bug: When placed at grid_length-slide * R² destroy cell.'''  # noqa: E501
+    if 1 <= coord < length_grid-1:  # If the ant is in the grid
+        return coord
+    elif coord == 0:    # Teleport the ant to the other side
         return length_grid-2
-    return (x % (length_grid-1)) + 1
+    elif length_grid - coord - 1 == slide:
+        print('worked')
+        return (coord % (length_grid-1) + 1)
+    return (coord % (length_grid-1) + 1)
 
 
 def next_gen(previous_table_main: list, previous_table_ant: list, width: int, height: int, multiplier=1, steps_per_cycle=1):  # noqa:501
@@ -148,47 +152,26 @@ def next_gen(previous_table_main: list, previous_table_ant: list, width: int, he
     new_table_ant = start_ant(len(previous_table_ant), len(previous_table_ant[0]))  # noqa: E501
     angles = ["E", "N", "O", "S"]
 
-    if steps_per_cycle != 1:
-        temp_main_grid, temp_ant_grid = previous_table_main, previous_table_ant
-        for iteration in range(steps_per_cycle):
-            for x in range(1, len(temp_ant_grid[0]) - 1):
-                for y in range(1, len(temp_ant_grid) - 1):
-                    # [Cell State], [Turn, Cell change, Movement], [Cell color], [Rule Name]  # noqa: E501
+    for x in range(1, len(previous_table_ant[0]) - 1):
+        for y in range(1, len(previous_table_ant) - 1):
 
-                    # Keep drawing cells if state unchanged
-                    if temp_main_grid[y][x] == 1:
-                        new_table_main[y][x] = 1
+            # Keep drawing cells if state unchanged
+            if previous_table_main[y][x] == 1:
+                new_table_main[y][x] = 1
 
-                    if temp_ant_grid[y][x][0]:  # If there is an ant
-                        if temp_main_grid[y][x] == -1:  # If the cell is white
-                            directions = case_selector(temp_ant_grid[y][x][1], -1, multiplier)    # Select ant's new orientation  # noqa: E501
-                            new_table_ant[interval(y+directions[0], height)][interval(x+directions[1], width)] = [1, angles[(angles.index(temp_ant_grid[y][x][1])-1) % 4]]  # Set new ant's attributes  # noqa: E501
-                        else:
-                            directions = case_selector(temp_ant_grid[y][x][1], 1, multiplier)  # noqa: E501
-                            new_table_ant[interval(y-directions[0], height)][interval(x-directions[1], width)] = [1,  angles[(angles.index(temp_ant_grid[y][x][1])+1) % 4]]  # noqa: E501
-                        new_table_main[y][x] = -temp_main_grid[y][x]   # Switch cell state  # noqa: E501
-
-            temp_main_grid, temp_ant_grid = (new_table_main, new_table_ant)
-        return (temp_main_grid, temp_ant_grid)
-    else:
-        for x in range(1, len(previous_table_ant[0]) - 1):
-            for y in range(1, len(previous_table_ant) - 1):
-                # [Cell State], [Turn, Cell change, Movement], [Cell color], [Rule Name]  # noqa: E501
-
-                # Keep drawing cells if state unchanged
-                if previous_table_main[y][x] == 1:
-                    new_table_main[y][x] = 1
-
-                if previous_table_ant[y][x][0]:  # If there is an ant
-                    if previous_table_main[y][x] == -1:  # If the cell is white
-                        directions = case_selector(previous_table_ant[y][x][1], -1, multiplier)    # Select ant's new orientation  # noqa: E501
-                        new_table_ant[interval(y+directions[0], height)][interval(x+directions[1], width)] = [1, angles[(angles.index(previous_table_ant[y][x][1])-1) % 4]]  # Set new ant's attributes  # noqa: E501
-                    else:
-                        directions = case_selector(previous_table_ant[y][x][1], 1, multiplier)  # noqa: E501
-                        new_table_ant[interval(y-directions[0], height)][interval(x-directions[1], width)] = [1,  angles[(angles.index(previous_table_ant[y][x][1])+1) % 4]]  # noqa: E501
-                    new_table_main[y][x] = -previous_table_main[y][x]   # Switch cell state  # noqa: E501
+            if previous_table_ant[y][x][0]:  # If there is an ant
+                if previous_table_main[y][x] == -1:  # If the cell is white
+                    directions = case_selector(previous_table_ant[y][x][1], -1, multiplier)    # Select ant's new orientation  # noqa: E501
+                    new_table_ant[interval(y+directions[0], height)][interval(x+directions[1], width)] = [1, angles[(angles.index(previous_table_ant[y][x][1])-1) % 4]]  # Set new ant's attributes  # noqa: E501
+                else:   # If the cell is black
+                    directions = case_selector(previous_table_ant[y][x][1], 1, multiplier)  # noqa: E501
+                    new_table_ant[interval(y-directions[0], height)][interval(x-directions[1], width)] = [1,  angles[(angles.index(previous_table_ant[y][x][1])+1) % 4]]  # noqa: E501
+                new_table_main[y][x] = -previous_table_main[y][x]   # Switch cell state  # noqa: E501
 
     return (new_table_main, new_table_ant)
+
+
+# /=> Save functions <=/
 
 
 def save(state: dict) -> None:
@@ -206,14 +189,14 @@ def save(state: dict) -> None:
     save_selection_window.eval('tk::PlaceWindow . center')
     save_selection_window.resizable(False, False)
 
-    # If there is not save, add a label
+    # If there is no save, add a label
     if len(saves) == 0:
         emptyLabel = Label(save_selection_window, text="No saves for now", anchor='center')  # noqa: E501
         emptyLabel.pack(pady=10)
     # If there is saves, list them to allow update
     else:
-        for i in range(0, len(saves)):
-            save = saves[i]
+        for iteration in range(len(saves)):
+            save = saves[iteration]
             saveLabel = Label(save_selection_window, text=save['saveName'], anchor="w", cursor="hand2")  # noqa: E501
             saveLabel.pack()
             saveLabel.bind("<Button-1>", lambda event, save=save: updateEntry(state, save, save_selection_window))  # noqa: E501
@@ -259,12 +242,13 @@ def newEntry(state: dict, window: Tk) -> None:
     :return: None
     """
     name = simpledialog.askstring("Choose a name", "Name :")
+    time_v = time()
     entry = {
-        "state": state,
         "saveName": name,
         "id": str(uuid4()),
-        "createdAt": time(),
-        "updatedAt": time()
+        "createdAt": time_v,
+        "updatedAt": time_v,
+        "state": state
     }
     saveEntry(entry)
     window.destroy()
@@ -280,7 +264,7 @@ def saveEntry(entry: dict) -> None:
     # print(entry['id'])
 
     # Make sure save directory exists
-    filepath = _getFile(entry['id'])
+    filepath = _getFile('{%s}_%s' % (entry['saveName'], entry['id']))
     # Open file and write to it
     handler = open(filepath, 'w+')
     handler.write(dumps(entry))
@@ -346,7 +330,6 @@ def _getSaveDirectoryPath() -> str:
 def _ensureSaveDirectoryExists() -> None:
     """
     Check if the directory exist else create it
-    Verifie si le repertoire existe et si il exite pas on le créer
     :return:None
     """
     global ROOT_DIR
@@ -367,11 +350,11 @@ def saveState() -> None:
     pause = -1
     # Prepare data
     save({
-        "main_grid": main_grid,
-        "ant_grid": ant_grid,
         "width": width,
         "height": height,
-        "generation": generation
+        "generation": generation,
+        "main_grid": main_grid,
+        "ant_grid": ant_grid
     })
 
 
@@ -424,7 +407,7 @@ def loadEntry(save: dict, window: Tk) -> None:
     window.destroy()
     update_widgets()
 
-
+# /=> Save functions END <=/
 # /=> Dependancies END <=/
 
 
@@ -466,7 +449,7 @@ main_grid, ant_grid = start(height, width), start_ant(height, width)
 
 action, cursor_size_width, cursor_size_height = (Rectangle), 1, 1
 
-generation, number_of_generations, steps_per_gen,  = 0, 1e5, 1
+generation, number_of_generations, steps_per_gen,  = 0, .99999e5, 1
 slide, cell = 1, 9
 
 # [Ant Color], [Rule Name]
@@ -521,16 +504,20 @@ main_window.title("Langton's Ant")
 main_window.configure(bg="#000000")
 main_window.state(windowState)
 main_window.geometry('%dx%d' % (screen_width - 50, screen_height - 50))
+windows_icons = PhotoImage(file="langton_icon.png")
+main_window.iconphoto(False, windows_icons)
 
 # /=> Window DEF END <=/
 
 # /=> Widgets DEF <=/
 sim_graph = Label()
-sim_graph.grid(row=0, column=1, rowspan=height*20, columnspan=3)
+sim_graph.grid(row=0, column=2, rowspan=height*20, columnspan=3)
 
 Sim_time = Label(text="N/A", background="#111111", fg='#0088ff', font=("Times New Roman", 12))  # noqa: E501
 Sim_date = Label(text="N/A", background="#111111", fg='#0088ff', font=("Times New Roman", 12))  # noqa: E501
 Sim_Dimensions = Label(text="N/A", background="#111111", fg='#0088ff', font=("Times New Roman", 12))  # noqa: E501
+Sim_current_coordinates_x = Label(text="N/A", background="#111111", fg='#0088ff', font=("Times New Roman", 12))  # noqa: E501
+Sim_current_coordinates_y = Label(text="N/A", background="#111111", fg='#0088ff', font=("Times New Roman", 12))  # noqa: E501
 Sim_stats_dimensions = Label(text="N/A", background="#111111", fg='#0088ff', font=("Times New Roman", 12))  # noqa: E501
 Sim_feedback = Label(text="Nothing to report.", background="#111111", fg="#AAAAAA", font=("Times New Roman", 12))  # noqa: E501
 Sim_generation = Label(text="N/A", background="#111111", fg='magenta', font=("Times New Roman", 12))  # noqa: E501
@@ -538,15 +525,17 @@ Sim_cells = Label(text="N/A", background="#111111", fg='magenta', font=("Times N
 Sim_ant = Label(text="N/A", background="#111111", fg='magenta', font=("Times New Roman", 12))  # noqa: E501
 Sim_progress = Label(text="N/A", background="#111111", font=("Times New Roman", 12))  # noqa: E501
 
-Sim_time.grid(row=0, column=0)
-Sim_date.grid(row=1, column=0)
-Sim_Dimensions.grid(row=2, column=0)
-Sim_stats_dimensions.grid(row=3, column=0)
-Sim_feedback.grid(row=4, column=0)
-Sim_generation.grid(row=5, column=0)
-Sim_cells.grid(row=6, column=0)
-Sim_ant.grid(row=7, column=0)
-Sim_progress.grid(row=8, column=0)
+Sim_time.grid(row=0, column=0, columnspan=2)
+Sim_date.grid(row=1, column=0, columnspan=2)
+Sim_Dimensions.grid(row=2, column=0, columnspan=2)
+Sim_current_coordinates_x.grid(row=3, column=0)
+Sim_current_coordinates_y.grid(row=3, column=1)
+Sim_stats_dimensions.grid(row=4, column=0, columnspan=2)
+Sim_feedback.grid(row=5, column=0, columnspan=2)
+Sim_generation.grid(row=6, column=0, columnspan=2)
+Sim_cells.grid(row=7, column=0, columnspan=2)
+Sim_ant.grid(row=8, column=0, columnspan=2)
+Sim_progress.grid(row=9, column=0, columnspan=2)
 
 
 # /=> Widgets DEF END <=/
@@ -615,13 +604,19 @@ def main_cycle():
     if pause == 1:
         update_widgets()
 
+    curs_x, curs_y = ((sim_graph.winfo_pointerx()-sim_graph.winfo_rootx())//cell), ((sim_graph.winfo_pointery()-sim_graph.winfo_rooty())//cell)  # noqa:E501
+    if (0 <= curs_x < width):
+        Sim_current_coordinates_x.config(text='Cursor pos x: %d' % (curs_x))
+    if ((0 <= curs_y < height)):
+        Sim_current_coordinates_y.config(text='Cursor pos y: %d' % (curs_y))
     main_window.update()
     draw_simulation()
     if pause == -1:
         draw_simulation()
         main_window.after(func=main_cycle, ms=1)
     elif generation < number_of_generations:
-        main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height, slide, steps_per_gen)  # noqa: E501
+        for iteration in range(steps_per_gen):
+            main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height, slide, steps_per_gen)  # noqa: E501
         generation += steps_per_gen
         main_window.after(func=main_cycle, ms=1)
     else:
@@ -674,9 +669,12 @@ def key_press(event):
         pause = -(pause)
     elif press == 'f':
         pause = -1
-        main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height, slide, steps_per_gen)  # noqa: E501
-        generation += 1
-        update_widgets()
+        if generation >= number_of_generations:
+            main_window.destroy()
+        else:
+            main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height, slide, steps_per_gen)  # noqa: E501
+            generation += 1
+            update_widgets()
     elif press == 'Tab':
         print('Attempted a forced window closure by pressing TAB at generation n° %d at %s  ' % (generation, time_log(True)))  # noqa: E501
         stop_sim()
