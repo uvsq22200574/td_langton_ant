@@ -17,7 +17,6 @@ Do not forget to configure VS Code to use that font and enable ligatures.
 
 This programm requires to have libraries not pre-installed: Pillow ; colorama.
 To install libraries, open a terminal and write " pip install {library1 library2 libraryx} ".  # noqa: E501
-Please follow instructions given at the beginning when running the programm. (Soon™)  # noqa: E501
 """
 
 # /=> System Compatibility <=/
