@@ -374,7 +374,7 @@ def loadState() -> None:
     pause = -1
     saves = listSaves()
     window = Tk()
-    window.title('Select a save file or create a new one')
+    window.title('Select a save file:')
 
     # Set the geometry
     window.geometry("600x600")
