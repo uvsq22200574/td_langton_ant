@@ -1,13 +1,12 @@
-from tkinter import Tk, Label, Checkbutton, IntVar, Button, simpledialog, PhotoImage
+from tkinter import Tk, Label, Checkbutton, IntVar, Button, simpledialog, PhotoImage, LabelFrame  # noqa: E501
 from PIL import Image, ImageTk
-from colorama import init, Fore, Style
+from colorama import Fore, Style
 from platform import system
 from os import path, listdir, mkdir, chdir
 from uuid import uuid4
 from json import dumps, load
 from time import time
 from datetime import datetime
-init()
 
 
 """
@@ -26,21 +25,24 @@ chdir(path.dirname(path.realpath(__file__)))
 
 # Set current file path in the variable
 ROOT_DIR = path.dirname(path.abspath(__file__))
-
-if operating_system := system() == 'Windows':
+operating_system = system()
+if operating_system == 'Windows':
     from ctypes import windll
     user32 = windll.user32
     user32.SetProcessDPIAware()
     screen_width, screen_height = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)  # noqa: E501
     windowState = "zoomed"
+    print(Fore.GREEN + "Sucessfully determined operating system. You are running on '%s' with display dimensions '%dx%d' and window state as '%s'." % (operating_system, screen_width, screen_height, windowState) + Style.RESET_ALL, sep='')  # noqa: E501
 elif operating_system == 'Linux':
     from Xlib.display import Display
     screen = Display(':0').screen()
     screen_width = screen.width_in_pixels
     screen_height = screen.height_in_pixels
     windowState = "normal"
-elif operating_system == '':
-    raise Exception("Could not determine the operating system.")
+    print(Fore.GREEN + "Sucessfully determined operating system. You are running on '%s' with display dimensions '%dx%d' and window state as '%s'." % (operating_system, screen_width, screen_height, windowState) + Style.RESET_ALL, sep='')  # noqa: E501
+else:
+    raise Exception(Fore.RED + "Could not determine the operating system." + Style.RESET_ALL)  # noqa: E501
+
 
 # /=> System Compatibility END <=/
 
@@ -100,7 +102,7 @@ def count(table: list, tmp=1, tmp2=0):
                 count += (table[row][column] if table[row][column] > 0 else 0)
     percentage = ((count * 100) / ((len(table) - 2) * (len(table[0]) - 2)))
     if tmp2:
-        return count
+        return (count)
     return "%.5d / %.5d (%.3f%%)" % (count, (len(table) - 2) * (len(table[0]) - 2), percentage)  # noqa: E501
 
 
@@ -132,13 +134,12 @@ def case_selector(direction: str, cell_state: int, multiplier=1):
 
 
 def interval(coord: int, length_grid: int):
-    '''Enable the grid to be a tor.\n /!\\ Bug: When placed at grid_length-slide * R² destroy cell.'''  # noqa: E501
+    '''Enable the grid to be a tor.\n /!\\ Bug: When placed at grid_length-slide * R² it destroy the cell.'''  # noqa: E501
     if 1 <= coord < length_grid-1:  # If the ant is in the grid
-        return coord
+        return (coord)
     elif coord == 0:    # Teleport the ant to the other side
-        return length_grid-2
+        return (length_grid-2)
     elif length_grid - coord - 1 == slide:
-        print('worked')
         return (coord % (length_grid-1) + 1)
     return (coord % (length_grid-1) + 1)
 
@@ -171,6 +172,9 @@ def next_gen(previous_table_main: list, previous_table_ant: list, width: int, he
     return (new_table_main, new_table_ant)
 
 
+# /=> /=> /=> /=> PLACE 'previous_gen()' HERE <=/ <=/ <=/ <=/
+
+
 # /=> Save functions <=/
 
 
@@ -195,8 +199,8 @@ def save(state: dict) -> None:
         emptyLabel.pack(pady=10)
     # If there is saves, list them to allow update
     else:
-        for iteration in range(len(saves)):
-            save = saves[iteration]
+        for iteration, iterated_save_file in enumerate(saves):
+            save = iterated_save_file
             saveLabel = Label(save_selection_window, text=save['saveName'], anchor="w", cursor="hand2")  # noqa: E501
             saveLabel.pack()
             saveLabel.bind("<Button-1>", lambda event, save=save: updateEntry(state, save, save_selection_window))  # noqa: E501
@@ -261,7 +265,6 @@ def saveEntry(entry: dict) -> None:
     :entry: dict an object containing the variables(state, saveName, id, createdAt, updateAt)  # noqa: E501
     :return: None
     """
-    # print(entry['id'])
 
     # Make sure save directory exists
     filepath = _getFile('{%s}_%s' % (entry['saveName'], entry['id']))
@@ -284,8 +287,11 @@ def listSaves() -> None:
     for files_path in listdir(directory):
         # check if current path is a file
         if (path.splitext(files_path)[1] == '.json') and path.isfile(path.join(directory, files_path)):  # noqa: E501
-            saves.append(_readFile(files_path))
-    return saves
+            try:
+                saves.append(_readFile(files_path))
+            except:  # noqa: E722
+                print(Fore.YELLOW + "There was an error with one save file" + Style.RESET_ALL)  # noqa: E501
+    return (saves)
 
 
 # read a save file and return data as object
@@ -299,7 +305,7 @@ def _readFile(filename: str) -> object:
     handler = open(filepath)
     state = load(handler)
     handler.close()
-    return state
+    return (state)
 
 
 # Create a new file path
@@ -313,7 +319,7 @@ def _getFile(fileId: str = '') -> str:
     directory = _getSaveDirectoryPath()
     filename = fileId + '.json'
     filepath = path.join(directory, filename)
-    return filepath
+    return (filepath)
 
 
 # Get save directory path
@@ -457,22 +463,18 @@ rules = [["#00ff00", "#ff00ff"], "LANGTON ANT"]
 
 dimensions = ((width * (cell)), (height * (cell)))
 
+base_font = ("Times New Roman", 12)
+
 # /=> Simulation parameters END <=/
-
-
-def set_action(new_action=Rectangle):
-    '''Allow to change the function defined to the variable "action".'''
-
-    global action
-    action = new_action
 
 
 def stop_sim():
     '''Set the simulation parameters so that it stops itself.'''
 
     global generation, number_of_generations, pause
+    print(Fore.RED + 'Attempted a forced window closure at generation n° %d at %s  ' % (generation, time_log()) + Style.RESET_ALL)  # noqa: E501
     generation = number_of_generations
-    pause = -1
+    pause = 1
 
 
 def clear_grid():
@@ -501,47 +503,80 @@ def fill_grid(grid=main_grid, value=-1, tmp=1):
 
 main_window = Tk()
 main_window.title("Langton's Ant")
-main_window.configure(bg="#000000")
+main_window.configure(bg="#2C3E50")
 main_window.state(windowState)
 main_window.geometry('%dx%d' % (screen_width - 50, screen_height - 50))
-windows_icons = PhotoImage(file="langton_icon.png")
-main_window.iconphoto(False, windows_icons)
+
+try:
+    windows_icons = PhotoImage(file="langton_icon.png")
+    main_window.iconphoto(False, windows_icons)
+except:  # noqa: E722
+    print(Fore.RED + "Could not load the window icon." + Style.RESET_ALL)  # noqa: E501
 
 # /=> Window DEF END <=/
 
 # /=> Widgets DEF <=/
 sim_graph = Label()
-sim_graph.grid(row=0, column=2, rowspan=height*20, columnspan=3)
+sim_graph.grid(row=0, column=2, rowspan=height*20, columnspan=3, padx=10)
 
-Sim_time = Label(text="N/A", background="#111111", fg='#0088ff', font=("Times New Roman", 12))  # noqa: E501
-Sim_date = Label(text="N/A", background="#111111", fg='#0088ff', font=("Times New Roman", 12))  # noqa: E501
-Sim_Dimensions = Label(text="N/A", background="#111111", fg='#0088ff', font=("Times New Roman", 12))  # noqa: E501
-Sim_current_coordinates_x = Label(text="N/A", background="#111111", fg='#0088ff', font=("Times New Roman", 12))  # noqa: E501
-Sim_current_coordinates_y = Label(text="N/A", background="#111111", fg='#0088ff', font=("Times New Roman", 12))  # noqa: E501
-Sim_stats_dimensions = Label(text="N/A", background="#111111", fg='#0088ff', font=("Times New Roman", 12))  # noqa: E501
-Sim_feedback = Label(text="Nothing to report.", background="#111111", fg="#AAAAAA", font=("Times New Roman", 12))  # noqa: E501
-Sim_generation = Label(text="N/A", background="#111111", fg='magenta', font=("Times New Roman", 12))  # noqa: E501
-Sim_cells = Label(text="N/A", background="#111111", fg='magenta', font=("Times New Roman", 12))  # noqa: E501
-Sim_ant = Label(text="N/A", background="#111111", fg='magenta', font=("Times New Roman", 12))  # noqa: E501
-Sim_progress = Label(text="N/A", background="#111111", font=("Times New Roman", 12))  # noqa: E501
+setting = LabelFrame(main_window, text="Settings", padx=50, pady=10, bg="#17202A", fg="#FFFFFF")  # noqa:E501
+setting.grid(row=0, column=0)
+com = LabelFrame(main_window, text="Command", padx=185, pady=10, bg="#17202A", fg="#FFFFFF")  # noqa:E501
+com.grid(row=1, column=0)
+
+Sim_time = Label(setting, text="N/A", background="#111111", fg='#ff8000', font=base_font)  # noqa: E501
+Sim_date = Label(setting, text="N/A", background="#111111", fg='#ff8000', font=base_font)  # noqa: E501
+Sim_Dimensions = Label(setting, text="N/A", background="#111111", fg='#0088ff', font=base_font)  # noqa: E501
+Sim_current_coordinates_x = Label(setting, text="N/A", background="#111111", fg='#0088ff', font=base_font)  # noqa: E501
+Sim_current_coordinates_y = Label(setting, text="N/A", background="#111111", fg='#0088ff', font=base_font)  # noqa: E501
+Sim_stats_dimensions = Label(setting, text="N/A", background="#111111", fg='#0088ff', font=base_font)  # noqa: E501
+Sim_feedback = Label(setting, text="Nothing to report.", background="#111111", fg="#AAAAAA", font=base_font)  # noqa: E501
+Sim_generation = Label(setting, text="N/A", background="#111111", fg='magenta', font=base_font)  # noqa: E501
+Sim_cells = Label(setting, text="N/A", background="#111111", fg='magenta', font=base_font)  # noqa: E501
+Sim_ant = Label(setting, text="N/A", background="#111111", fg='magenta', font=base_font)  # noqa: E501
+Sim_progress = Label(setting, text="N/A", background="#111111", font=base_font)  # noqa: E501
+
+
+grid_edit = IntVar()
+grid_Checkbutton = Checkbutton(com, bg="#FFCCBC", text="Edit Cells", variable=grid_edit, width=15, selectcolor='#FBAFFF', indicatoron=0)  # noqa: E501
+
+Simulation_fill_white = Button(com, text='Fill White', command=lambda: fill_grid(main_grid, value=-1), bg="#87CEEB", width=15)  # noqa: E501
+Simulation_fill_black = Button(com, text='Fill Black', command=lambda: fill_grid(main_grid, value=1), bg="#FFD54F", width=15)  # noqa: E501
+Simulation_reverse = Button(com, text='Invert White/Black', command=lambda: fill_grid(main_grid, tmp=0), bg="#EC7063", width=15)  # noqa: E501
+Simulation_clear = Button(com, text='Clear', command=lambda: clear_grid(), bg="#58D68D", width=15)  # noqa:E501
+Simulation_save = Button(com, text="Save", command=lambda: saveState(), bg="#5DADE2", width=15)  # noqa:E501
+Simulation_load = Button(com, text="Load", command=lambda: loadState(), bg="#CBAACB", width=15)  # noqa:E501
+
 
 Sim_time.grid(row=0, column=0, columnspan=2)
-Sim_date.grid(row=1, column=0, columnspan=2)
+Sim_date.grid(row=1, column=0, columnspan=2, pady=5)
 Sim_Dimensions.grid(row=2, column=0, columnspan=2)
-Sim_current_coordinates_x.grid(row=3, column=0)
-Sim_current_coordinates_y.grid(row=3, column=1)
+Sim_current_coordinates_x.grid(row=3, column=0, pady=5)
+Sim_current_coordinates_y.grid(row=3, column=1, pady=5)
 Sim_stats_dimensions.grid(row=4, column=0, columnspan=2)
-Sim_feedback.grid(row=5, column=0, columnspan=2)
-Sim_generation.grid(row=6, column=0, columnspan=2)
+Sim_feedback.grid(row=5, column=0, columnspan=2, pady=5)
+Sim_generation.grid(row=6, column=0, columnspan=2, pady=5)
 Sim_cells.grid(row=7, column=0, columnspan=2)
-Sim_ant.grid(row=8, column=0, columnspan=2)
-Sim_progress.grid(row=9, column=0, columnspan=2)
+Sim_ant.grid(row=8, column=0, columnspan=2, pady=5)
+Sim_progress.grid(row=9, column=0, columnspan=2, pady=5)
+
+grid_Checkbutton.grid(row=0, column=0)
+Simulation_clear.grid(row=1, column=0, pady=5)
+Simulation_fill_white.grid(row=2, column=0)
+Simulation_fill_black.grid(row=3, column=0, pady=5)
+Simulation_reverse.grid(row=4, column=0)
+Simulation_save.grid(row=5, column=0, pady=5)
+Simulation_load.grid(row=6, column=0)
+
+Butexit = Button(com, text="Exit", width=15, command=lambda: stop_sim(), bg="#E1A5AC")  # noqa:E501
+Butexit.grid(row=7, column=0, pady=5)
 
 
 # /=> Widgets DEF END <=/
 
 
 def update_widgets():
+    '''Will update most widgets. Called with every cicle.'''
     Sim_time.config(text='Time: %s' % (time_log(True, True)))
     Sim_date.config(text='Date: %s' % (time_log(True, False, False)))
     Sim_generation.config(text="Generation: %.5d | Max: %.5d" % (generation, number_of_generations))  # noqa: E501
@@ -623,25 +658,6 @@ def main_cycle():
         main_window.destroy()
 
 
-grid_edit = IntVar()
-grid_Checkbutton = Checkbutton(bg="#444444", text="Edit Cells", variable=grid_edit)  # noqa: E501
-grid_Checkbutton.grid(row=0, column=5)
-
-Simulation_fill_white = Button(text='Fill White', command=lambda: fill_grid(main_grid, value=-1))  # noqa: E501
-Simulation_fill_black = Button(text='Fill Black', command=lambda: fill_grid(main_grid, value=1))  # noqa: E501
-Simulation_reverse = Button(text='Invert White/Black', command=lambda: fill_grid(main_grid, tmp=0))  # noqa: E501
-Simulation_clear = Button(text='Clear', command=lambda: clear_grid())
-Simulation_save = Button(text="Save", command=lambda: saveState())
-Simulation_load = Button(text="Load", command=lambda: loadState())
-
-Simulation_fill_white.grid(row=1, column=5)
-Simulation_fill_black.grid(row=2, column=5)
-Simulation_reverse.grid(row=3, column=5)
-Simulation_clear.grid(row=4, column=5)
-Simulation_save.grid(row=5, column=5)
-Simulation_load.grid(row=6, column=5)
-
-
 def place_action(eventorigin):
     '''Action of creating a cell.'''
 
@@ -676,9 +692,7 @@ def key_press(event):
             generation += 1
             update_widgets()
     elif press == 'Tab':
-        print('Attempted a forced window closure by pressing TAB at generation n° %d at %s  ' % (generation, time_log(True)))  # noqa: E501
         stop_sim()
-        pause = 1
     elif press == 'Up':
         if cursor_size_height < height-2:
             cursor_size_height += 1
