@@ -143,6 +143,10 @@ def interval(coord: int, length_grid: int):
     return (coord % (length_grid-1) + 1)
 
 
+def conv_hex_rgb(color: str):
+    return (int(color[1:-4], 16), int(color[3:-2], 16), int(color[5:], 16))
+
+
 def next_gen(previous_table_main: list, previous_table_ant: list, width: int, height: int, multiplier=1, steps_per_cycle=1):  # noqa:501
     '''
     Compute all steps, then return the next grid based on the previous one.
@@ -457,8 +461,8 @@ action, cursor_size_width, cursor_size_height = (Rectangle), 1, 1
 generation, number_of_generations, steps_per_gen,  = 0, .99999e5, 1
 slide, cell = 1, 9
 
-# [Ant Color], [Rule Name]
-rules = [["#00ff00", "#ff00ff"], "LANGTON ANT"]
+# [cell color, ant color 1, ant color 2] [name]
+rules = [["#000000", "#ff00ff", "#ffff00"], "LANGTON ANT"]
 
 dimensions = ((width * (cell)), (height * (cell)))
 
@@ -597,15 +601,15 @@ def draw_simulation():
         for column in range(height):
             # Draw black pixels if there's a cell.
             if main_grid[column][row] == 1:
-                pixels[row, column] = (0, 0, 0)
+                pixels[row, column] = conv_hex_rgb(rules[0][0])
 
             # Draw border's pixels if iterating at the borders.
             if (column in [0, len(main_grid)-1] or row in [0, len(main_grid[0])-1]):  # noqa: E501
-                pixels[row, column] = (0, 0, 128)
+                pixels[row, column] = conv_hex_rgb('#000088')
 
             # Draw ant's pixels if there's an ant, based on if there's a cell underneath.  # noqa: E501
             if ant_grid[column][row][0] == 1:
-                pixels[row, column] = (255, 0, 255) if (main_grid[column][row] == 1) else (0, 255, 0)  # noqa: E501
+                pixels[row, column] = conv_hex_rgb(rules[0][1]) if (main_grid[column][row] == 1) else conv_hex_rgb(rules[0][2])  # noqa: E501
 
     # Resize the image to be bigger.
     mid_image = ((cell_grid.resize((cell_grid.size[0] * cell, cell_grid.size[1] * cell), resample=Image.NEAREST)))  # noqa: E501
