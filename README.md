@@ -15,7 +15,7 @@ change la couleur de la case en noir et avance d’une case.
 
 Pour faire fonctionner le programme il faut :
 
-  • Á l'aide de la souris placer une fourmi sur la grille puis appuyer sur espace pour que la simulation  démarre
+  • Á l'aide de la souris placer une fourmi sur la grille puis appuyer sur la touche 'espace' pour que la simulation  démarre
  
   • Lorsque l'on souhaite tout suppprimer il faut appuyer sur le bouton 'Clear'
  
@@ -30,3 +30,5 @@ Pour faire fonctionner le programme il faut :
   • On peut aussi sauvegarder une grille avec le bouton 'Save' et en charger d'autre avec le bouton 'Load'
  
   • Pour finir on peut quiter la fenêtre avec le bouton 'Quit'
+
+  • On peut appuyer sur les touches 'f' et 'd' pour avancer ou reculer dans la simulation
