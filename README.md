@@ -19,6 +19,6 @@ Pour faire fonctionner le programme il faut :
  • si l'on souhaite modifier une seule case de ka grille il faut activer le 'Edit cells'
  • si on veut changer la couleur de la grille qui initialement blanche il faut appuyer sur le bouton 'Fill Black'
  • si on veut remettre la grille a sa couleur initiale on peut appuyer sur le bouton 'Fill White'
- • en cours de simulation on peut échanger le noir et le blanc avec le bouton 'Invert White/Black'
- • on peut aussi sauvegarder une grille avec le bouton 'Save' et en charger diautre avec le bouton 'Load'
+ • en cours de simulation on peut échanger le noir et le blanc avec le bouton 'Invert White/Black'\n
+ • on peut aussi sauvegarder une grille avec le bouton 'Save' et en charger diautre avec le bouton 'Load'/n
  • pour finit on peut quiiter la page avec le bouton 'Quit'
