@@ -3,7 +3,7 @@ L1 Sciences Technologie Mathématiques Informatique S2MITD04
 Hugo Assis | 
 Kyllian Pham | 
 Baptiste Garnier | 
-Levi Hoimian | 
+Levi Hoimian
 
 URL de dépot du projet : https://github.com/uvsq22200574/td_langton_ant/tree/main
 
