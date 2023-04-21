@@ -132,6 +132,12 @@ def case_selector(direction: str, cell_state: int, multiplier=1):
     return [[0, -multiplier], [multiplier, 0], [0, multiplier], [-multiplier, 0]][["E", "N", "O", "S"].index(direction)]  # noqa: E501
 
 
+def case_selector_reverse(direction: str, multiplier=1):
+    '''same but for the previous_gen function'''
+
+    return [[-multiplier, 0], [0, -multiplier], [multiplier, 0], [0, multiplier]][["E", "N", "O", "S"].index(direction)]  # noqa: E501
+
+
 def interval(coord: int, length_grid: int):
     '''Enable the grid to be a tor.\n /!\\ Bug: When placed at grid_length-slide * R² it destroy the cell.'''  # noqa: E501
     if 1 <= coord < length_grid-1:  # If the ant is in the grid
@@ -151,14 +157,12 @@ def next_gen(previous_table_main: list, previous_table_ant: list, width: int, he
     '''
     Compute all steps, then return the next grid based on the previous one.
     '''
-
     new_table_main = start(len(previous_table_main), len(previous_table_main[0]))  # noqa: E501
     new_table_ant = start_ant(len(previous_table_ant), len(previous_table_ant[0]))  # noqa: E501
     angles = ["E", "N", "O", "S"]
 
     for x in range(1, len(previous_table_ant[0]) - 1):
         for y in range(1, len(previous_table_ant) - 1):
-
             # Keep drawing cells if state unchanged
             if previous_table_main[y][x] == 1:
                 new_table_main[y][x] = 1
@@ -171,11 +175,36 @@ def next_gen(previous_table_main: list, previous_table_ant: list, width: int, he
                     directions = case_selector(previous_table_ant[y][x][1], 1, multiplier)  # noqa: E501
                     new_table_ant[interval(y-directions[0], height)][interval(x-directions[1], width)] = [1,  angles[(angles.index(previous_table_ant[y][x][1])+1) % 4]]  # noqa: E501
                 new_table_main[y][x] = -previous_table_main[y][x]   # Switch cell state  # noqa: E501
-
     return (new_table_main, new_table_ant)
 
 
-# /=> /=> /=> /=> PLACE 'previous_gen()' HERE <=/ <=/ <=/ <=/
+def previous_gen(current_table_main: list, current_table_ant: list, width: int, height: int, multiplier=1, steps_per_cycle=1):  # noqa: E501
+    '''
+    the same as next_gen but the ants go backwards
+    press 'd' to use.
+    '''
+
+    new_table_main = start(len(current_table_main), len(current_table_main[0]))
+    new_table_ant = start_ant(len(current_table_ant), len(current_table_ant[0]))  # noqa: E501
+    angles = ["E", "N", "O", "S"]
+
+    for x in range(1, len(current_table_ant[0]) - 1):
+        for y in range(1, len(current_table_ant) - 1):
+
+            # Keep drawing cells if state unchanged
+            if current_table_main[y][x] == 1:
+                new_table_main[y][x] = 1
+
+            if current_table_ant[y][x][0]:  # If there is an ant
+                directions = case_selector_reverse(current_table_ant[y][x][1], multiplier)  # 'takes a step back'  # noqa: E501
+                if current_table_main[interval(y+directions[0], height)][interval(x+directions[1], width)] == -1:  # noqa: E501
+                    new_table_ant[interval(y-directions[0], height)][interval(x-directions[1], width)] = [1, angles[(angles.index(current_table_ant[y][x][1])-1) % 4]]  # Set new ant's attributes  # noqa: E501
+                    new_table_main[interval(y-directions[0], height)][interval(x-directions[1], width)] = -current_table_main[interval(y-directions[0], height)][interval(x-directions[1], width)]  # Switch cell state  # noqa: E501
+                else:
+                    new_table_ant[interval(y+directions[0], height)][interval(x+directions[1], width)] = [1, angles[(angles.index(current_table_ant[y][x][1])+1) % 4]]  # noqa: E501
+                    new_table_main[interval(y+directions[0], height)][interval(x+directions[1], width)] = -current_table_main[interval(y+directions[0], height)][interval(x+directions[1], width)]  # noqa: E501
+
+    return (new_table_main, new_table_ant)
 
 
 # /=> Save functions <=/
@@ -692,6 +721,14 @@ def key_press(event):
             main_window.destroy()
         else:
             main_grid, ant_grid = next_gen(main_grid, ant_grid, width, height, slide, steps_per_gen)  # noqa: E501
+            generation += 1
+            update_widgets()
+    elif press == 'd':
+        pause = -1
+        if generation >= number_of_generations:
+            main_window.destroy()
+        else:
+            main_grid, ant_grid = previous_gen(main_grid, ant_grid, width, height, slide, steps_per_gen)  # noqa: E501
             generation += 1
             update_widgets()
     elif press == 'Tab':
